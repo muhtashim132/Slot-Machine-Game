@@ -456,6 +456,8 @@
     }
 
     state.isSpinning = true;
+    stoppedCount = 0;
+    isRespinActive = false;
     state.lastWin = 0;
     state.showCelebration = false;
     clearReelHighlights();
@@ -501,16 +503,29 @@
   }
 
   let stoppedCount = 0;
+  let isRespinActive = false;
+
   function onReelStopped(reelIndex) {
     stoppedCount++;
-    if (stoppedCount >= 3) {
+    const requiredStops = isRespinActive ? 1 : 3;
+
+    if (stoppedCount >= requiredStops) {
       stoppedCount = 0;
       stopReelSpinLoop();
-      evaluateSpinResult();
+      const wasRespin = isRespinActive;
+      isRespinActive = false;
+      evaluateSpinResult(wasRespin);
     }
   }
 
-  function evaluateSpinResult() {
+  function evaluateSpinResult(wasRespin = false) {
+    stopReelSpinLoop();
+
+    // If this evaluation was after a respin, unlock all reels
+    if (wasRespin) {
+      state.reels.forEach(r => r.isLocked = false);
+    }
+
     const r1 = state.currentOutcome[0];
     const r2 = state.currentOutcome[1];
     const r3 = state.currentOutcome[2];
@@ -556,7 +571,8 @@
     }
 
     // 3. Lucky Respin Bonus (Two matching non-cherry symbols)
-    if (!isFreeSpin) {
+    // Only trigger if not already a free spin AND not already after a respin
+    if (!isFreeSpin && !wasRespin) {
       let lockA = -1, lockB = -1, respinTarget = -1;
       if (r1 === r2 && r1 !== SYMBOL_TYPES.CHERRY) {
         lockA = 0; lockB = 1; respinTarget = 2;
@@ -573,11 +589,14 @@
     }
 
     // No win
-    state.statusText = 'Better luck next spin! Try again.';
+    state.statusText = wasRespin ? 'Respin finished! Better luck next spin.' : 'Better luck next spin! Try again.';
     concludeSpin();
   }
 
   function triggerLuckyRespin(lockA, lockB, respinTarget) {
+    isRespinActive = true;
+    stoppedCount = 0;
+    state.isSpinning = true;
     state.statusText = `⚡ LUCKY RESPIN! Reel ${respinTarget + 1} Respinning! ⚡`;
     state.reels[lockA].isLocked = true;
     state.reels[lockB].isLocked = true;
@@ -596,6 +615,7 @@
   }
 
   function awardWin(amount, title, isJackpot) {
+    stopReelSpinLoop();
     state.lastWin = amount;
     state.coins += amount;
     state.totalWon += amount;
@@ -639,6 +659,10 @@
 
   function concludeSpin() {
     state.isSpinning = false;
+    isRespinActive = false;
+    stoppedCount = 0;
+    stopReelSpinLoop();
+    clearReelHighlights();
 
     if (state.autoSpin) {
       if (state.coins >= getCurrentBet() || state.freeSpins > 0) {
