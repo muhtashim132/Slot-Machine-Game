@@ -37,11 +37,24 @@ Then visit `http://localhost:8080`.
 
 ## 🌟 Game Features
 
-### 1. Manual Winning Rules Engine & Bet Configurator
-Unlike games with rigid, hardcoded payout logic, this Slot Machine features a **fully customizable Dynamic Rule Engine & Manual Bet Configurator**:
+### 1. Interactive Onboarding Walkthrough (First-Time Device Onboarding)
+When launching the game for the first time on any device, an **interactive 5-step spotlight onboarding walkthrough** automatically introduces the player to the game:
+- 💡 **Spotlight Focus Frame**: Dynamically tracks and illuminates the active feature on the arcade cabinet while dimming the background.
+- 🎯 **Step-by-Step Guidance**:
+  1. **The 3-Reel Payline**: Explains the center payline win conditions and default strict rules.
+  2. **Bet Settings & Rules Configurator**: Demonstrates wager adjustments and the new **`⚙️ BET SETTINGS`** button on the console bar.
+  3. **Interactive Lever & Spin**: Shows how to pull the mechanical lever or press Spacebar/Spin.
+  4. **Paytable & Free Spins**: Explains symbol payouts, the 3-Bells Free Spins feature, and the 2X win multiplier.
+  5. **Bankroll & Tour Replay**: Welcomes the player with 1,000 complimentary coins and notes that the tour can be replayed anytime.
+- ❓ **Replay Anytime**: Click the **`❓`** button on the bottom console bar or the top **`❓ HOW TO PLAY & WALKTHROUGH`** button to restart the tour at any time.
 
-- ⚙️ **Open Configurator**: Click the floating **`⚙️ WINNING RULES & BET SETTINGS`** button at the top left, or click the **TOTAL BET** number on the console bar.
-- 💰 **Manual Bet Input**: Directly enter any bet amount in the numeric input field (e.g. `25`, `77`, `250`), use `-10`/`+10` stepper buttons, or click chip presets (`25`, `50`, `100`, `250`, `MAX`).
+---
+
+### 2. Manual Bet Settings & Winning Rule Engine
+The previous `MAX BET` button has been replaced with the prominent **`⚙️ BET SETTINGS`** button on the main console bar:
+
+- ⚙️ **Access Bet Settings**: Click the **`⚙️ BET SETTINGS`** button directly on the bottom console, or click the **TOTAL BET** display.
+- 💰 **Manual Bet Input**: Directly enter any bet amount in the numeric input field (e.g. `25`, `77`, `250`), use `-10`/`+10` stepper buttons, or click chip presets (`25`, `50`, `100`, `250`, `500`).
 - ⭐ **Strict Assignment Rule (Default)**: Conforms strictly to the assignment requirement: **"Player wins when all slots have the same symbol"**. Secondary rules such as 2-cherries or respin are **disabled by default**, so only 3 matching symbols win!
 - ⚖️ **Toggle Any Combination**: Enable or disable any winning condition with a single click. Want only 7-7-7 to pay out? Simply uncheck the other symbols.
 - 🔢 **Custom Multipliers**: Edit the payout multiplier directly in the table for each combination (e.g., customize 7-7-7 from 100x to 500x, or BAR from 50x to 150x).
@@ -54,7 +67,24 @@ Unlike games with rigid, hardcoded payout logic, this Slot Machine features a **
   - **⭐ Strict Assignment**: Only 3 matching symbols win (7-7-7, BAR-BAR-BAR, BELL-BELL-BELL, CHERRY-CHERRY-CHERRY). 2-cherries and respin disabled.
   - **🎰 Classic Arcade + Bonus**: 3-of-a-kind + 2 Cherries (2x) + Lucky Respin enabled.
   - **🔥 High Roller Mania**: 250x, 100x, 50x, 20x multipliers for high stakes play.
-- 💾 **Live Application & Storage**: Rules are saved to browser storage and update the in-game paytable modal immediately.
+- 💾 **Live Application & Storage**: Settings are saved to browser storage and update the in-game paytable modal immediately.
+
+---
+
+### 3. Edge Case Handling & Polish
+- 🛡️ **Mid-Spin Bet Lock**: Bet amounts and rules cannot be modified while reels are in motion.
+- 🔒 **Free Spins Wager Freeze**: Bet modification is locked during Free Spins mode to preserve the triggering wager.
+- 🪙 **Bankruptcy Recovery**: If coins drop to 0, players can press **R** or click their balance display to instantly reload 1,000 complimentary coins.
+- ⌨️ **Full Keyboard Accessibility**:
+  - `Space` / `Enter`: Spin the reels or progress onboarding.
+  - `B`: Toggle Bet Settings modal.
+  - `P`: Toggle Paytable modal.
+  - `M`: Toggle Sound on/off.
+  - `A`: Toggle Auto Spin.
+  - `R`: Reload free coins when bankrupt.
+  - `Escape`: Close any open modal or dismiss walkthrough.
+- 📱 **Non-Overlapping Pixel-Perfect Layout**: Redesigned console bar separates Coin Balance, Last Win, Total Bet steppers, Bet Settings, Paytable, Sound, and Tour buttons with clean dividers.
+- 🔊 **Safe WebAudio Unlock**: Auto-unlocks audio context on initial keypress or touch without throwing unhandled browser autoplay rejections.
 
 ---
 

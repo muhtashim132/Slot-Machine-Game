@@ -25,13 +25,14 @@ namespace SlotMachine.UI
         [Header("Primary Action Buttons")]
         [SerializeField] private Button spinButton;
         [SerializeField] private Button autoSpinButton;
-        [SerializeField] private Button maxBetButton;
+        [SerializeField] private Button betSettingsButton;
         [SerializeField] private Button increaseBetButton;
         [SerializeField] private Button decreaseBetButton;
         [SerializeField] private Button paytableButton;
         [SerializeField] private Button soundToggleButton;
 
         [Header("Modals & Overlays")]
+        [SerializeField] private GameObject betSettingsModal;
         [SerializeField] private GameObject paytableModal;
         [SerializeField] private GameObject freeSpinsBanner;
         [SerializeField] private Text soundToggleText;
@@ -61,8 +62,8 @@ namespace SlotMachine.UI
             if (autoSpinButton != null)
                 autoSpinButton.onClick.AddListener(() => GameManager.Instance.ToggleAutoSpin());
 
-            if (maxBetButton != null)
-                maxBetButton.onClick.AddListener(() => GameManager.Instance.SetMaxBet());
+            if (betSettingsButton != null)
+                betSettingsButton.onClick.AddListener(ToggleBetSettings);
 
             if (increaseBetButton != null)
                 increaseBetButton.onClick.AddListener(() => GameManager.Instance.IncreaseBet());
@@ -109,7 +110,7 @@ namespace SlotMachine.UI
             if (spinButton != null) spinButton.interactable = interactable;
             if (increaseBetButton != null) increaseBetButton.interactable = interactable;
             if (decreaseBetButton != null) decreaseBetButton.interactable = interactable;
-            if (maxBetButton != null) maxBetButton.interactable = interactable;
+            if (betSettingsButton != null) betSettingsButton.interactable = interactable;
         }
 
         public void SetAutoSpinActive(bool isActive)
@@ -131,11 +132,28 @@ namespace SlotMachine.UI
                 freeSpinsBadgeText.text = $"FREE SPINS: {remainingSpins} (2X MULTIPLIER)";
         }
 
+        public void ToggleBetSettings()
+        {
+            if (betSettingsModal != null)
+            {
+                SoundManager.Instance?.PlayButtonClick();
+                if (paytableModal != null) paytableModal.SetActive(false);
+                betSettingsModal.SetActive(!betSettingsModal.activeSelf);
+            }
+        }
+
+        public void CloseBetSettings()
+        {
+            if (betSettingsModal != null)
+                betSettingsModal.SetActive(false);
+        }
+
         public void TogglePaytable()
         {
             if (paytableModal != null)
             {
                 SoundManager.Instance?.PlayButtonClick();
+                if (betSettingsModal != null) betSettingsModal.SetActive(false);
                 paytableModal.SetActive(!paytableModal.activeSelf);
             }
         }

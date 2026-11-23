@@ -249,12 +249,10 @@ namespace SlotMachine.Core
             UIManager.Instance?.UpdateBet(CurrentBet);
         }
 
-        public void SetMaxBet()
+        public void OpenBetSettings()
         {
-            if (currentState != GameState.Idle) return;
             SoundManager.Instance?.PlayButtonClick();
-            currentBetIndex = GameConfig.BET_TIERS.Length - 1;
-            UIManager.Instance?.UpdateBet(CurrentBet);
+            UIManager.Instance?.ToggleBetSettings();
         }
 
         public void ToggleAutoSpin()

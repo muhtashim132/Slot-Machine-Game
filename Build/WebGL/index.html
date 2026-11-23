@@ -97,8 +97,8 @@
       color: #94a3b8;
     }
 
-    /* --- Floating Trigger Button --- */
-    #toggle-rules-btn {
+    /* --- Top Floating Guide Button --- */
+    #how-to-play-btn {
       position: absolute;
       top: 14px;
       left: 16px;
@@ -119,14 +119,171 @@
       transition: all 0.2s ease;
     }
 
-    #toggle-rules-btn:hover {
+    #how-to-play-btn:hover {
       background: #4338ca;
       color: #fff;
       transform: translateY(-1px);
       box-shadow: 0 6px 22px rgba(99, 102, 241, 0.65);
     }
 
-    /* --- Custom Rules & Bet Configurator Modal --- */
+    /* --- Interactive Onboarding Walkthrough --- */
+    #onboarding-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100;
+      pointer-events: auto;
+      transition: opacity 0.3s ease;
+    }
+
+    #onboarding-overlay.hidden {
+      display: none;
+    }
+
+    #spotlight-box {
+      position: absolute;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(8, 12, 28, 0.82), 0 0 30px rgba(56, 189, 248, 0.85);
+      border: 3px solid #38bdf8;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #onboarding-card {
+      position: absolute;
+      width: 440px;
+      background: rgba(15, 23, 42, 0.98);
+      border: 1.5px solid #6366f1;
+      border-radius: 16px;
+      padding: 22px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 35px rgba(99, 102, 241, 0.4);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 102;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .onboarding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .onboarding-step-pill {
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid #818cf8;
+      color: #a5b4fc;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+
+    .onboarding-skip-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .onboarding-skip-btn:hover {
+      color: #f8fafc;
+    }
+
+    .onboarding-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .onboarding-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #cbd5e1;
+    }
+
+    .onboarding-desc strong {
+      color: #38bdf8;
+    }
+
+    .onboarding-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 12px;
+      margin-top: 4px;
+    }
+
+    .onboarding-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .onboarding-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #475569;
+      transition: all 0.2s ease;
+    }
+
+    .onboarding-dot.active {
+      background: #38bdf8;
+      width: 20px;
+      border-radius: 4px;
+    }
+
+    .onboarding-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .onboarding-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .onboarding-btn-prev {
+      background: transparent;
+      border: 1px solid #64748b;
+      color: #94a3b8;
+    }
+
+    .onboarding-btn-prev:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .onboarding-btn-next {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      border: 1px solid #818cf8;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .onboarding-btn-next:hover {
+      background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+      transform: translateY(-1px);
+    }
+
+    /* --- Bet Settings Modal --- */
     #rules-modal {
       position: absolute;
       top: 14px;
@@ -541,17 +698,17 @@
       <div id="loading-text">Loading Assets...</div>
     </div>
 
-    <!-- Floating Trigger Button for Rules & Bet Settings -->
-    <button id="toggle-rules-btn" title="Open Winning Rules & Bet Configurator">
-      ⚙️ WINNING RULES & BET SETTINGS
+    <!-- Top Floating Guide Button -->
+    <button id="how-to-play-btn" title="How to Play & Interactive Walkthrough">
+      ❓ HOW TO PLAY & WALKTHROUGH
     </button>
 
-    <!-- Custom Rules & Bet Configurator Modal -->
+    <!-- Bet Settings Modal -->
     <div id="rules-modal" class="hidden">
       <div class="modal-header">
         <div class="modal-title-box">
-          <div class="modal-title">⚙️ WINNING RULES & BET CONFIGURATOR</div>
-          <div class="modal-subtitle">Manually customize winning conditions, payout multipliers, and bet amounts.</div>
+          <div class="modal-title">⚙️ BET SETTINGS</div>
+          <div class="modal-subtitle">Configure your bet amount, active winning rules, and payout multipliers.</div>
         </div>
         <button id="close-rules-btn">✕</button>
       </div>
@@ -569,7 +726,7 @@
             <button class="preset-chip" data-bet="50">50</button>
             <button class="preset-chip" data-bet="100">100</button>
             <button class="preset-chip" data-bet="250">250</button>
-            <button class="preset-chip" data-bet="max">MAX</button>
+            <button class="preset-chip" data-bet="500">500</button>
           </div>
         </div>
 
@@ -639,6 +796,34 @@
         <button class="reset-rules-btn" id="reset-rules-btn">↺ Reset to Defaults</button>
         <span id="save-toast">✓ Rules Applied Live!</span>
         <button class="save-rules-btn" id="save-rules-btn">💾 Save & Apply Rules</button>
+      </div>
+    </div>
+
+    <!-- Interactive Onboarding Walkthrough Overlay -->
+    <div id="onboarding-overlay" class="hidden">
+      <div id="spotlight-box"></div>
+      <div id="onboarding-card">
+        <div class="onboarding-header">
+          <span class="onboarding-step-pill" id="onboarding-step-text">STEP 1 OF 5</span>
+          <button class="onboarding-skip-btn" id="onboarding-skip-btn">Skip Tour ✕</button>
+        </div>
+        <div class="onboarding-title" id="onboarding-title">🎰 Welcome to Classic Slot Machine!</div>
+        <div class="onboarding-desc" id="onboarding-desc">
+          Match 3 identical symbols along the center payline to win big!
+        </div>
+        <div class="onboarding-footer">
+          <div class="onboarding-dots" id="onboarding-dots">
+            <span class="onboarding-dot active"></span>
+            <span class="onboarding-dot"></span>
+            <span class="onboarding-dot"></span>
+            <span class="onboarding-dot"></span>
+            <span class="onboarding-dot"></span>
+          </div>
+          <div class="onboarding-actions">
+            <button class="onboarding-btn onboarding-btn-prev" id="onboarding-prev-btn" style="display: none;">← Back</button>
+            <button class="onboarding-btn onboarding-btn-next" id="onboarding-next-btn">Next →</button>
+          </div>
+        </div>
       </div>
     </div>
 

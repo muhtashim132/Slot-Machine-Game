@@ -654,7 +654,16 @@
   }
 
   function setCustomBet(val) {
-    const amount = Math.max(1, parseInt(val) || 10);
+    if (state.isSpinning) {
+      flashSaveToast('⚠️ Cannot change bet while reels are spinning!');
+      return;
+    }
+    if (state.freeSpins > 0) {
+      flashSaveToast('⚠️ Bet is locked during Free Spins mode!');
+      return;
+    }
+    const maxLimit = Math.max(10, state.coins);
+    const amount = Math.max(1, Math.min(maxLimit, parseInt(val) || 10));
     state.customBet = amount;
     const cfgInput = document.getElementById('cfg-bet-input');
     if (cfgInput && document.activeElement !== cfgInput) {
@@ -663,6 +672,40 @@
     try {
       localStorage.setItem('slot_machine_custom_bet', amount.toString());
     } catch (e) {}
+  }
+
+  function reloadFreeCoins() {
+    if (state.coins < 10) {
+      state.coins = 1000;
+      state.statusText = '🪙 1,000 Complimentary Coins Reloaded!';
+      playSound('coinPayout', 0.9);
+      flashSaveToast('🪙 Bankroll reloaded to 1,000 Coins!');
+    }
+  }
+
+  function openBetSettingsModal() {
+    const modal = document.getElementById('rules-modal');
+    if (!modal) return;
+    state.showPaytable = false; // Mutually exclusive
+    modal.classList.remove('hidden');
+    renderRulesTable();
+    const cfgInput = document.getElementById('cfg-bet-input');
+    if (cfgInput) cfgInput.value = state.customBet;
+  }
+
+  function closeBetSettingsModal() {
+    const modal = document.getElementById('rules-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function toggleBetSettingsModal() {
+    const modal = document.getElementById('rules-modal');
+    if (!modal) return;
+    if (modal.classList.contains('hidden')) {
+      openBetSettingsModal();
+    } else {
+      closeBetSettingsModal();
+    }
   }
 
   // --- Game Mechanics & Win Logic ---
@@ -674,7 +717,11 @@
 
     if (!isFreeSpin) {
       if (state.coins < bet) {
-        state.statusText = 'Insufficient Coins! Lower bet.';
+        if (state.coins < 10) {
+          state.statusText = 'Out of Coins! Click Balance or press R to reload!';
+        } else {
+          state.statusText = 'Insufficient Coins! Lower bet in BET SETTINGS.';
+        }
         stopAutoSpin();
         return;
       }
@@ -980,8 +1027,16 @@
       }
     },
     {
+      id: 'balanceClick',
+      x: 55, y: 638, w: 155, h: 50,
+      isTransparent: true,
+      action: () => {
+        if (state.coins < 10) reloadFreeCoins();
+      }
+    },
+    {
       id: 'betPrev',
-      x: 480, y: 642, w: 42, h: 42,
+      x: 395, y: 642, w: 42, h: 42,
       isSprite: true,
       spriteNorm: 'btnPrevNorm',
       spriteHover: 'btnPrevHover',
@@ -993,24 +1048,16 @@
     },
     {
       id: 'betCenterClick',
-      x: 524, y: 642, w: 92, h: 42,
+      x: 440, y: 642, w: 80, h: 42,
       isTransparent: true,
       action: () => {
-        const modal = document.getElementById('rules-modal');
-        if (modal) {
-          modal.classList.toggle('hidden');
-          if (!modal.classList.contains('hidden')) {
-            renderRulesTable();
-            const cfgInput = document.getElementById('cfg-bet-input');
-            if (cfgInput) cfgInput.value = state.customBet;
-          }
-        }
         playSound('btnClick', 0.6);
+        openBetSettingsModal();
       }
     },
     {
       id: 'betNext',
-      x: 618, y: 642, w: 42, h: 42,
+      x: 524, y: 642, w: 42, h: 42,
       isSprite: true,
       spriteNorm: 'btnNextNorm',
       spriteHover: 'btnNextHover',
@@ -1021,37 +1068,48 @@
       }
     },
     {
-      id: 'maxBet',
-      x: 685, y: 642, w: 90, h: 42,
-      label: 'MAX BET',
-      color: '#e11d48',
-      border: '#9f1239',
+      id: 'betSettings',
+      x: 580, y: 642, w: 145, h: 44,
+      label: '⚙️ BET SETTINGS',
+      color: '#4f46e5',
+      border: '#6366f1',
       action: () => {
-        if (state.isSpinning) return;
-        playSound('btnClick', 0.7);
-        setCustomBet(Math.max(10, state.coins));
+        playSound('btnClick', 0.6);
+        openBetSettingsModal();
       }
     },
     {
       id: 'paytable',
-      x: 55, y: 642, w: 135, h: 46,
+      x: 740, y: 642, w: 110, h: 44,
       label: 'PAYTABLE',
       color: '#8b5cf6',
       border: '#6d28d9',
       action: () => {
         playSound('btnClick', 0.7);
         state.showPaytable = !state.showPaytable;
+        if (state.showPaytable) closeBetSettingsModal();
       }
     },
     {
       id: 'sound',
-      x: 205, y: 642, w: 110, h: 46,
+      x: 865, y: 642, w: 105, h: 44,
       label: 'SOUND: ON',
       color: '#475569',
       border: '#334155',
       action: () => {
         isMuted = !isMuted;
         playSound('btnClick', 0.7);
+      }
+    },
+    {
+      id: 'tourBtn',
+      x: 985, y: 642, w: 48, h: 44,
+      label: '❓',
+      color: '#0284c7',
+      border: '#0369a1',
+      action: () => {
+        playSound('btnClick', 0.6);
+        startOnboarding(true);
       }
     },
     {
@@ -1067,6 +1125,7 @@
   let hoveredButtonId = null;
 
   function handlePointer(clientX, clientY, isDown = false) {
+    if (isOnboardingActive) return;
     const canvas = document.getElementById('game-canvas');
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -1217,7 +1276,7 @@
 
     // Bottom Console Bar Panel
     const barX = 40, barY = 630, barW = 1200, barH = 68;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1225,30 +1284,41 @@
     ctx.fill();
     ctx.stroke();
 
+    // Subtle Section Dividers
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(215, 638);
+    ctx.lineTo(215, 690);
+    ctx.moveTo(375, 638);
+    ctx.lineTo(375, 690);
+    ctx.stroke();
+
     // A. Balance Section
     ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 12px "Segoe UI", sans-serif';
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('COIN BALANCE', 60, 652);
+    ctx.fillText('COIN BALANCE', 65, 650);
 
-    ctx.fillStyle = '#f59e0b';
-    ctx.font = 'bold 24px "Segoe UI", monospace';
-    ctx.fillText(state.coins.toLocaleString(), 60, 678);
+    ctx.fillStyle = state.coins < 10 ? '#ef4444' : '#f59e0b';
+    ctx.font = 'bold 22px "Segoe UI", monospace';
+    ctx.fillText(state.coins.toLocaleString() + (state.coins < 10 ? ' (RELOAD)' : ''), 65, 676);
 
     // B. Last Win Section
     ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 12px "Segoe UI", sans-serif';
-    ctx.fillText('LAST WIN', 250, 652);
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('LAST WIN', 235, 650);
 
     ctx.fillStyle = state.lastWin > 0 ? '#10b981' : '#64748b';
-    ctx.font = 'bold 24px "Segoe UI", monospace';
-    ctx.fillText(state.lastWin > 0 ? `+${state.lastWin.toLocaleString()}` : '0', 250, 678);
+    ctx.font = 'bold 22px "Segoe UI", monospace';
+    ctx.fillText(state.lastWin > 0 ? `+${state.lastWin.toLocaleString()}` : '0', 235, 676);
 
     // C. Bet Selector Section
     ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 12px "Segoe UI", sans-serif';
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('TOTAL BET', 570, 652);
+    ctx.fillText('TOTAL BET', 482, 650);
 
     // Prev Bet Sprite Button
     const prevBtn = UI_BUTTONS.find(b => b.id === 'betPrev');
@@ -1258,32 +1328,39 @@
     // Bet Amount Value
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 22px "Segoe UI", monospace';
-    ctx.fillText(getCurrentBet().toString(), 570, 678);
+    ctx.fillText(getCurrentBet().toString(), 482, 676);
 
     // Next Bet Sprite Button
     const nextBtn = UI_BUTTONS.find(b => b.id === 'betNext');
     const nextImg = (hoveredButtonId === 'betNext') ? images.btnNextHover : images.btnNextNorm;
     if (nextImg) ctx.drawImage(nextImg, nextBtn.x, nextBtn.y, nextBtn.w, nextBtn.h);
 
-    // Max Bet Button
-    drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'maxBet'));
+    // D. Bet Settings Button (Replaced Max Bet Button directly on console)
+    drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'betSettings'));
 
-    // Paytable Button
+    // E. Paytable Button
     drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'paytable'));
 
-    // Sound Toggle Button
+    // F. Sound Toggle Button
     const sndBtn = UI_BUTTONS.find(b => b.id === 'sound');
-    sndBtn.label = isMuted ? 'SOUND: OFF' : 'SOUND: ON';
-    drawSimpleButton(ctx, sndBtn);
+    if (sndBtn) {
+      sndBtn.label = isMuted ? 'SOUND: OFF' : 'SOUND: ON';
+      drawSimpleButton(ctx, sndBtn);
+    }
 
-    // Spin Button (Right Side Large)
+    // G. Walkthrough Tour Button
+    drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'tourBtn'));
+
+    // H. Spin Button (Right Side Large)
     drawLargeActionButton(ctx, UI_BUTTONS.find(b => b.id === 'spin'), state.isSpinning);
 
-    // Auto Spin Button
+    // I. Auto Spin Button
     const autoBtn = UI_BUTTONS.find(b => b.id === 'auto');
-    autoBtn.label = state.autoSpin ? 'STOP AUTO' : 'AUTO SPIN';
-    autoBtn.color = state.autoSpin ? '#ef4444' : '#3b82f6';
-    drawSimpleButton(ctx, autoBtn);
+    if (autoBtn) {
+      autoBtn.label = state.autoSpin ? 'STOP AUTO' : 'AUTO SPIN';
+      autoBtn.color = state.autoSpin ? '#ef4444' : '#3b82f6';
+      drawSimpleButton(ctx, autoBtn);
+    }
 
     ctx.restore();
   }
@@ -1615,8 +1692,157 @@
     }
   }
 
+  // --- Interactive Onboarding Walkthrough System ---
+  const ONBOARDING_KEY = 'slot_machine_onboarding_completed';
+  let currentOnboardingStep = 0;
+  let isOnboardingActive = false;
+
+  const ONBOARDING_STEPS = [
+    {
+      title: '🎰 Welcome to Classic Slot Machine!',
+      badge: 'STEP 1 OF 5 · THE OBJECTIVE',
+      desc: 'Match <strong>3 identical symbols</strong> along the center payline to win! By default, strict rules apply where all 3 reels must match for an authentic, fair slot experience.',
+      target: { x: MACHINE_X + 225, y: MACHINE_Y + 242, w: 374, h: 216 }
+    },
+    {
+      title: '⚙️ Bet Settings & Custom Rules',
+      badge: 'STEP 2 OF 5 · WAGER & RULES',
+      desc: 'Use the <strong><</strong> and <strong>></strong> steppers to adjust your bet, or click <strong>⚙️ BET SETTINGS</strong> right here to manually configure bet amount, toggle winning combinations, and edit payout multipliers!',
+      target: { x: 390, y: 638, w: 340, h: 52 }
+    },
+    {
+      title: '🕹️ Pull the Lever or Hit SPIN',
+      badge: 'STEP 3 OF 5 · CONTROLS',
+      desc: 'Click or drag down the <strong>Mechanical Lever</strong> on the right, press the large <strong>SPIN</strong> button, or hit the <strong>SPACEBAR</strong> on your keyboard to spin the reels!',
+      target: { x: MACHINE_X + 680, y: MACHINE_Y + 275, w: 120, h: 330 }
+    },
+    {
+      title: '📜 Paytable & Bonus Features',
+      badge: 'STEP 4 OF 5 · BONUSES',
+      desc: 'Click <strong>PAYTABLE</strong> to inspect live multipliers. Land <strong>3 Bells</strong> to trigger <strong>5 Free Spins</strong> with an automatic <strong>2X Multiplier</strong> on all payouts!',
+      target: { x: 735, y: 638, w: 120, h: 52 }
+    },
+    {
+      title: '🪙 You’re Ready to Play!',
+      badge: 'STEP 5 OF 5 · BANKROLL',
+      desc: 'You start with <strong>1,000 complimentary coins</strong>. Click the <strong>❓</strong> button on the console bar anytime to replay this tour. Good luck & enjoy the game!',
+      target: { x: 55, y: 638, w: 325, h: 52 }
+    }
+  ];
+
+  function startOnboarding(force = false) {
+    if (!force) {
+      try {
+        if (localStorage.getItem(ONBOARDING_KEY) === 'true') return;
+      } catch (e) {}
+    }
+
+    isOnboardingActive = true;
+    currentOnboardingStep = 0;
+    closeBetSettingsModal();
+    state.showPaytable = false;
+
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+
+    renderOnboardingStep();
+  }
+
+  function renderOnboardingStep() {
+    const step = ONBOARDING_STEPS[currentOnboardingStep];
+    if (!step) return;
+
+    const stepText = document.getElementById('onboarding-step-text');
+    const titleEl = document.getElementById('onboarding-title');
+    const descEl = document.getElementById('onboarding-desc');
+    const prevBtn = document.getElementById('onboarding-prev-btn');
+    const nextBtn = document.getElementById('onboarding-next-btn');
+    const dotsContainer = document.getElementById('onboarding-dots');
+
+    if (stepText) stepText.textContent = step.badge;
+    if (titleEl) titleEl.innerHTML = step.title;
+    if (descEl) descEl.innerHTML = step.desc;
+
+    if (prevBtn) prevBtn.style.display = currentOnboardingStep > 0 ? 'inline-block' : 'none';
+    if (nextBtn) {
+      nextBtn.textContent = (currentOnboardingStep === ONBOARDING_STEPS.length - 1) ? 'Let’s Play! 🚀' : 'Next →';
+    }
+
+    if (dotsContainer) {
+      dotsContainer.innerHTML = '';
+      ONBOARDING_STEPS.forEach((_, idx) => {
+        const dot = document.createElement('span');
+        dot.className = `onboarding-dot ${idx === currentOnboardingStep ? 'active' : ''}`;
+        dotsContainer.appendChild(dot);
+      });
+    }
+
+    updateSpotlightPosition(step.target);
+  }
+
+  function updateSpotlightPosition(t) {
+    const canvas = document.getElementById('game-canvas');
+    const spotlight = document.getElementById('spotlight-box');
+    const card = document.getElementById('onboarding-card');
+    if (!canvas || !spotlight || !card) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const containerRect = canvas.parentElement.getBoundingClientRect();
+    const scaleX = rect.width / CANVAS_WIDTH;
+    const scaleY = rect.height / CANVAS_HEIGHT;
+
+    const pad = 6;
+    const spotLeft = (rect.left - containerRect.left) + (t.x - pad) * scaleX;
+    const spotTop = (rect.top - containerRect.top) + (t.y - pad) * scaleY;
+    const spotWidth = (t.w + pad * 2) * scaleX;
+    const spotHeight = (t.h + pad * 2) * scaleY;
+
+    spotlight.style.left = `${spotLeft}px`;
+    spotlight.style.top = `${spotTop}px`;
+    spotlight.style.width = `${spotWidth}px`;
+    spotlight.style.height = `${spotHeight}px`;
+
+    const containerW = containerRect.width;
+    const containerH = containerRect.height;
+    const cardW = 440;
+
+    let cardLeft = (containerW - cardW) / 2;
+    let cardTop = (t.y < 350) ? Math.min(containerH - 260, spotTop + spotHeight + 16) : Math.max(16, spotTop - 250);
+
+    card.style.left = `${Math.max(16, Math.min(containerW - cardW - 16, cardLeft))}px`;
+    card.style.top = `${cardTop}px`;
+  }
+
+  function nextOnboardingStep() {
+    if (currentOnboardingStep < ONBOARDING_STEPS.length - 1) {
+      currentOnboardingStep++;
+      playSound('btnClick', 0.6);
+      renderOnboardingStep();
+    } else {
+      finishOnboarding();
+    }
+  }
+
+  function prevOnboardingStep() {
+    if (currentOnboardingStep > 0) {
+      currentOnboardingStep--;
+      playSound('btnClick', 0.6);
+      renderOnboardingStep();
+    }
+  }
+
+  function finishOnboarding() {
+    isOnboardingActive = false;
+    try {
+      localStorage.setItem(ONBOARDING_KEY, 'true');
+    } catch (e) {}
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) overlay.classList.add('hidden');
+    playSound('coinPayout', 0.8);
+  }
+
   function setupRuleEngineUI() {
-    const toggleBtn = document.getElementById('toggle-rules-btn');
+    const howToPlayBtn = document.getElementById('how-to-play-btn');
     const modal = document.getElementById('rules-modal');
     const closeBtn = document.getElementById('close-rules-btn');
     const betInput = document.getElementById('cfg-bet-input');
@@ -1630,17 +1856,26 @@
     const resetRulesBtn = document.getElementById('reset-rules-btn');
     const saveRulesBtn = document.getElementById('save-rules-btn');
 
-    if (toggleBtn && modal) {
-      toggleBtn.addEventListener('click', (e) => {
+    // Onboarding Walkthrough Elements
+    const obNext = document.getElementById('onboarding-next-btn');
+    const obPrev = document.getElementById('onboarding-prev-btn');
+    const obSkip = document.getElementById('onboarding-skip-btn');
+
+    if (howToPlayBtn) {
+      howToPlayBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         playSound('btnClick', 0.6);
-        modal.classList.toggle('hidden');
-        if (!modal.classList.contains('hidden')) {
-          renderRulesTable();
-          if (betInput) betInput.value = state.customBet;
-        }
+        startOnboarding(true);
       });
     }
+
+    if (obNext) obNext.addEventListener('click', () => nextOnboardingStep());
+    if (obPrev) obPrev.addEventListener('click', () => prevOnboardingStep());
+    if (obSkip) obSkip.addEventListener('click', () => finishOnboarding());
+
+    window.addEventListener('resize', () => {
+      if (isOnboardingActive) renderOnboardingStep();
+    });
 
     if (closeBtn && modal) {
       closeBtn.addEventListener('click', (e) => {
@@ -1677,11 +1912,7 @@
         e.stopPropagation();
         playSound('btnClick', 0.6);
         const b = btn.getAttribute('data-bet');
-        if (b === 'max') {
-          setCustomBet(Math.max(10, state.coins));
-        } else {
-          setCustomBet(parseInt(b));
-        }
+        setCustomBet(parseInt(b));
       });
     });
 
@@ -1735,13 +1966,58 @@
       saveRulesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         saveActiveRules();
-        flashSaveToast('✓ Rules & Bet Saved Successfully!');
+        flashSaveToast('✓ Bet Settings Saved Successfully!');
         playSound('btnClick', 0.7);
         setTimeout(() => {
           if (modal) modal.classList.add('hidden');
         }, 600);
       });
     }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      // Do not intercept keystrokes if typing inside inputs
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
+        if (e.key === 'Escape') document.activeElement.blur();
+        return;
+      }
+
+      if (isOnboardingActive) {
+        if (e.key === 'ArrowRight' || e.key === 'Enter') {
+          nextOnboardingStep();
+          e.preventDefault();
+        } else if (e.key === 'ArrowLeft') {
+          prevOnboardingStep();
+          e.preventDefault();
+        } else if (e.key === 'Escape') {
+          finishOnboarding();
+          e.preventDefault();
+        }
+        return;
+      }
+
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (!state.isSpinning) executeSpin();
+      } else if (e.key === 'Escape') {
+        closeBetSettingsModal();
+        state.showPaytable = false;
+        state.showCelebration = false;
+      } else if (e.key === 'b' || e.key === 'B') {
+        toggleBetSettingsModal();
+      } else if (e.key === 'p' || e.key === 'P') {
+        state.showPaytable = !state.showPaytable;
+        if (state.showPaytable) closeBetSettingsModal();
+      } else if (e.key === 'm' || e.key === 'M') {
+        isMuted = !isMuted;
+        playSound('btnClick', 0.7);
+      } else if (e.key === 'a' || e.key === 'A') {
+        state.autoSpin = !state.autoSpin;
+        if (state.autoSpin && !state.isSpinning) executeSpin();
+      } else if (e.key === 'r' || e.key === 'R') {
+        reloadFreeCoins();
+      }
+    });
 
     // Initial render of rules table
     renderRulesTable();
@@ -1775,6 +2051,11 @@
         ls.style.opacity = '0';
         setTimeout(() => ls.style.display = 'none', 500);
       }
+
+      // Check and trigger interactive walkthrough on first launch on this device
+      setTimeout(() => {
+        startOnboarding(false);
+      }, 500);
 
       // Start RAF Loop
       let lastTime = performance.now();
