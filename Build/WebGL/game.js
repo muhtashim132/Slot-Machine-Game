@@ -413,6 +413,8 @@
   const state = {
     coins: 1000,
     betIndex: 0,
+    customBet: 10,
+    forcedOutcome: [null, null, null], // [r1, r2, r3] manually set winning combination
     lastWin: 0,
     totalWon: 0,
     statusText: 'Pull Lever or Press SPIN to Play!',
@@ -433,7 +435,64 @@
   };
 
   function getCurrentBet() {
-    return BET_TIERS[state.betIndex];
+    return Math.max(1, state.customBet || 10);
+  }
+
+  function setCustomBet(val) {
+    const amount = Math.max(1, parseInt(val) || 10);
+    state.customBet = amount;
+    const input = document.getElementById('manual-bet-input');
+    if (input && document.activeElement !== input) {
+      input.value = amount;
+    }
+    updateSimulatorPreview();
+  }
+
+  function setForcedReel(reelIndex, symbolVal) {
+    if (symbolVal === 'random' || symbolVal === null || symbolVal === undefined) {
+      state.forcedOutcome[reelIndex] = null;
+    } else {
+      state.forcedOutcome[reelIndex] = parseInt(symbolVal);
+    }
+    updateSimulatorPreview();
+  }
+
+  function updateSimulatorPreview() {
+    const r1 = state.forcedOutcome[0];
+    const r2 = state.forcedOutcome[1];
+    const r3 = state.forcedOutcome[2];
+    const bet = getCurrentBet();
+
+    const symLabels = ['★ 7', '✦ BAR', '🔔 BELL', '🍒 CHERRY'];
+    const c1 = r1 !== null ? symLabels[r1] : 'Random';
+    const c2 = r2 !== null ? symLabels[r2] : 'Random';
+    const c3 = r3 !== null ? symLabels[r3] : 'Random';
+
+    const comboEl = document.getElementById('preview-combo');
+    const condEl = document.getElementById('preview-condition');
+    const payEl = document.getElementById('preview-payout');
+
+    if (comboEl) comboEl.textContent = `${c1} | ${c2} | ${c3}`;
+
+    if (r1 !== null && r1 === r2 && r2 === r3) {
+      const mults = [100, 50, 25, 10];
+      const titles = ['★ Grand Jackpot (100x)', '✦ Mega Win (50x)', '🔔 Bell Bonanza (+5 Free Spins, 25x)', '🍒 Sweet Cherries (10x)'];
+      const mult = mults[r1];
+      if (condEl) condEl.textContent = titles[r1];
+      if (payEl) payEl.textContent = `+${(mult * bet).toLocaleString()} Coins (${mult}x)`;
+    } else if (r1 === 3 && r2 === 3 && r3 !== 3) {
+      if (condEl) condEl.textContent = '🍒 Double Cherries (2x)';
+      if (payEl) payEl.textContent = `+${(2 * bet).toLocaleString()} Coins (2x)`;
+    } else if (r1 !== null && r2 !== null && r1 === r2 && r1 !== 3) {
+      if (condEl) condEl.textContent = `⚡ Lucky Respin (Hold & Respin Reel 3)`;
+      if (payEl) payEl.textContent = `Triggers Free Respin`;
+    } else if (r1 === null || r2 === null || r3 === null) {
+      if (condEl) condEl.textContent = 'Dynamic RNG Outcome';
+      if (payEl) payEl.textContent = `Evaluated at Spin`;
+    } else {
+      if (condEl) condEl.textContent = 'No Match (Standard Loss)';
+      if (payEl) payEl.textContent = `+0 Coins`;
+    }
   }
 
   // --- Game Mechanics & Win Logic ---
@@ -468,8 +527,15 @@
     // 2. Play spin sound loop
     startReelSpinLoop();
 
-    // 3. RNG generation
-    state.currentOutcome = generateSpinOutcome();
+    // 3. Outcome generation (Use manually set outcome if specified, else fair RNG)
+    const f1 = state.forcedOutcome[0];
+    const f2 = state.forcedOutcome[1];
+    const f3 = state.forcedOutcome[2];
+    state.currentOutcome = [
+      f1 !== null ? f1 : getRandomSymbol(),
+      f2 !== null ? f2 : getRandomSymbol(),
+      f3 !== null ? f3 : getRandomSymbol()
+    ];
 
     // 4. Start reels spinning
     state.reels.forEach((r, idx) => {
@@ -740,7 +806,17 @@
       action: () => {
         if (state.isSpinning) return;
         playSound('btnClick', 0.6);
-        state.betIndex = (state.betIndex - 1 + BET_TIERS.length) % BET_TIERS.length;
+        setCustomBet(Math.max(1, state.customBet - 10));
+      }
+    },
+    {
+      id: 'betCenterClick',
+      x: 524, y: 642, w: 92, h: 42,
+      isTransparent: true,
+      action: () => {
+        const panel = document.getElementById('simulator-panel');
+        if (panel) panel.classList.toggle('hidden');
+        playSound('btnClick', 0.6);
       }
     },
     {
@@ -752,7 +828,7 @@
       action: () => {
         if (state.isSpinning) return;
         playSound('btnClick', 0.6);
-        state.betIndex = (state.betIndex + 1) % BET_TIERS.length;
+        setCustomBet(state.customBet + 10);
       }
     },
     {
@@ -764,7 +840,7 @@
       action: () => {
         if (state.isSpinning) return;
         playSound('btnClick', 0.7);
-        state.betIndex = BET_TIERS.length - 1;
+        setCustomBet(Math.max(10, state.coins));
       }
     },
     {
@@ -1210,6 +1286,112 @@
     return col;
   }
 
+  function setupSimulatorControls() {
+    const toggleBtn = document.getElementById('toggle-simulator-btn');
+    const panel = document.getElementById('simulator-panel');
+    const closeBtn = document.getElementById('close-simulator-btn');
+    const betInput = document.getElementById('manual-bet-input');
+    const betMinus = document.getElementById('bet-minus-btn');
+    const betPlus = document.getElementById('bet-plus-btn');
+    const chipBtns = document.querySelectorAll('.chip-btn');
+    const r1Select = document.getElementById('reel1-select');
+    const r2Select = document.getElementById('reel2-select');
+    const r3Select = document.getElementById('reel3-select');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    const simSpinBtn = document.getElementById('execute-simulation-btn');
+
+    if (toggleBtn && panel) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSound('btnClick', 0.6);
+        panel.classList.toggle('hidden');
+        updateSimulatorPreview();
+      });
+    }
+
+    if (closeBtn && panel) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSound('btnClick', 0.6);
+        panel.classList.add('hidden');
+      });
+    }
+
+    if (betInput) {
+      betInput.addEventListener('input', (e) => {
+        setCustomBet(e.target.value);
+      });
+      betInput.addEventListener('change', (e) => {
+        setCustomBet(e.target.value);
+      });
+    }
+
+    if (betMinus) {
+      betMinus.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSound('btnClick', 0.6);
+        setCustomBet(state.customBet - 10);
+      });
+    }
+
+    if (betPlus) {
+      betPlus.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSound('btnClick', 0.6);
+        setCustomBet(state.customBet + 10);
+      });
+    }
+
+    chipBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSound('btnClick', 0.6);
+        const b = btn.getAttribute('data-bet');
+        if (b === 'max') {
+          setCustomBet(Math.max(10, state.coins));
+        } else {
+          setCustomBet(parseInt(b));
+        }
+      });
+    });
+
+    [r1Select, r2Select, r3Select].forEach((sel, idx) => {
+      if (sel) {
+        sel.addEventListener('change', (e) => {
+          setForcedReel(idx, e.target.value);
+        });
+      }
+    });
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSound('btnClick', 0.6);
+        const r1 = btn.getAttribute('data-r1');
+        const r2 = btn.getAttribute('data-r2');
+        const r3 = btn.getAttribute('data-r3');
+
+        if (r1Select) r1Select.value = r1;
+        if (r2Select) r2Select.value = r2;
+        if (r3Select) r3Select.value = r3;
+
+        setForcedReel(0, r1);
+        setForcedReel(1, r2);
+        setForcedReel(2, r3);
+      });
+    });
+
+    if (simSpinBtn) {
+      simSpinBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (panel) panel.classList.add('hidden');
+        executeSpin();
+      });
+    }
+
+    updateSimulatorPreview();
+  }
+
   // --- Main Initialization ---
   function init() {
     const canvas = document.getElementById('game-canvas');
@@ -1226,6 +1408,9 @@
       handlePointer(t.clientX, t.clientY, true);
       e.preventDefault();
     }, { passive: false });
+
+    // Setup Manual Controls & Payout Simulator
+    setupSimulatorControls();
 
     // Load All Images and Audio
     loadAssets(() => {

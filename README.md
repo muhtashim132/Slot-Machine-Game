@@ -37,7 +37,7 @@ Then visit `http://localhost:8080`.
 
 ## 🌟 Game Features
 
-### 1. Winning Logic & Payout Table
+### 1. Winning Logic & Payout Table (With Manual Simulation)
 Wins are evaluated on the center payline across all 3 reels with the following multipliers:
 
 | Symbol | Combination | Multiplier | Bonus Reward | Tier |
@@ -47,6 +47,17 @@ Wins are evaluated on the center payline across all 3 reels with the following m
 | **BELL** | 3x Bell | **25x Bet** | 🔔 +5 Free Spins (2x Multiplier) 🔔 | Mid Tier / Bonus |
 | **CHERRY** | 3x Cherry | **10x Bet** | 🍒 Sweet Win 🍒 | Frequent |
 | **CHERRY** | Any 2 Cherries | **2x Bet** | 🍒 Minor Win 🍒 | Frequent |
+
+#### 🎯 Manual Outcome & Payout Simulator:
+- Click the **`⚙️ MANUAL CONTROLS & SIMULATOR`** button in the top left corner.
+- **Manually pick each reel's symbol** (`Reel 1`, `Reel 2`, `Reel 3`) or choose one of the quick presets (`7-7-7 Jackpot`, `BAR-BAR-BAR`, `BELLs`, `3x Cherry`, `2x Cherry`, `Lucky Respin`).
+- The live simulator card computes and previews the exact win condition and simulated payout before spinning!
+- Click **`🎯 SIMULATE & SPIN TO THIS OUTCOME`** to execute the spin and watch the reels stop on that combination and award the payout!
+
+#### 💰 Manual Bet Setting:
+- Type any custom bet amount directly into the **Bet Input field** (e.g., 25, 75, 200, 500).
+- Use quick stepper buttons (`-10`, `+10`) or quick chips (`50`, `100`, `250`, `MAX`).
+- You can also click the `<` and `>` arrow buttons or click the Bet number on the game console to adjust.
 
 ### 2. Smooth Spring-Damped Reel Animations
 - **Phase 1: Acceleration** — Reels accelerate rapidly from resting position.

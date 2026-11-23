@@ -32,7 +32,11 @@ namespace SlotMachine.Core
         [Header("Player Economy")]
         [SerializeField] private int playerCoins = GameConfig.INITIAL_PLAYER_COINS;
         [SerializeField] private int currentBetIndex = 0;
+        [SerializeField] private int customBet = 10;
         private int lastWinAmount = 0;
+
+        [Header("Manual Simulator Settings")]
+        private SymbolType?[] forcedOutcome = new SymbolType?[3] { null, null, null };
 
         [Header("State")]
         private GameState currentState = GameState.Idle;
@@ -41,7 +45,7 @@ namespace SlotMachine.Core
 
         public GameState CurrentState => currentState;
         public int PlayerCoins => playerCoins;
-        public int CurrentBet => GameConfig.BET_TIERS[currentBetIndex];
+        public int CurrentBet => customBet > 0 ? customBet : GameConfig.BET_TIERS[currentBetIndex];
 
         private void Awake()
         {
@@ -128,8 +132,12 @@ namespace SlotMachine.Core
             leverController?.SetInteractable(false);
             UIManager.Instance?.SetStatusText(isFreeSpin ? "★ FREE SPIN IN PROGRESS! ★" : "Reels Spinning... Good Luck!");
 
-            // 1. Get fair RNG outcome
-            SymbolType[] outcomes = RNGService.GenerateSpinOutcome();
+            // 1. Get outcome (Use manually set outcome if specified, else fair RNG)
+            SymbolType[] outcomes = new SymbolType[3];
+            for (int i = 0; i < 3; i++)
+            {
+                outcomes[i] = forcedOutcome[i].HasValue ? forcedOutcome[i].Value : RNGService.GetWeightedSymbol();
+            }
 
             // 2. Trigger physical reel spinning
             reelManager?.SpinAllReels(outcomes);
@@ -273,5 +281,46 @@ namespace SlotMachine.Core
             UIManager.Instance?.UpdateBalance(playerCoins);
             UIManager.Instance?.SetStatusText("Coins reloaded to 1,000!");
         }
+
+        /// <summary>
+        /// Manually sets any custom bet amount.
+        /// </summary>
+        public void SetCustomBet(int amount)
+        {
+            if (currentState != GameState.Idle) return;
+            customBet = Mathf.Max(1, amount);
+            UIManager.Instance?.UpdateBet(CurrentBet);
+        }
+
+        /// <summary>
+        /// Manually forces a specific reel outcome to simulate winning combinations and verify payouts.
+        /// </summary>
+        public void SetForcedOutcome(SymbolType? r1, SymbolType? r2, SymbolType? r3)
+        {
+            forcedOutcome[0] = r1;
+            forcedOutcome[1] = r2;
+            forcedOutcome[2] = r3;
+        }
+
+        [ContextMenu("Simulate 7-7-7 Jackpot (100x)")]
+        public void SimulateJackpot777() => SetForcedOutcome(SymbolType.Seven, SymbolType.Seven, SymbolType.Seven);
+
+        [ContextMenu("Simulate BAR-BAR-BAR (50x)")]
+        public void SimulateMegaWinBar() => SetForcedOutcome(SymbolType.Bar, SymbolType.Bar, SymbolType.Bar);
+
+        [ContextMenu("Simulate BELL-BELL-BELL (25x + Free Spins)")]
+        public void SimulateBellBonanza() => SetForcedOutcome(SymbolType.Bell, SymbolType.Bell, SymbolType.Bell);
+
+        [ContextMenu("Simulate 3x Cherries (10x)")]
+        public void SimulateTripleCherries() => SetForcedOutcome(SymbolType.Cherry, SymbolType.Cherry, SymbolType.Cherry);
+
+        [ContextMenu("Simulate 2x Cherries (2x)")]
+        public void SimulateDoubleCherries() => SetForcedOutcome(SymbolType.Cherry, SymbolType.Cherry, SymbolType.Seven);
+
+        [ContextMenu("Simulate Lucky Respin (7-7-Cherry)")]
+        public void SimulateLuckyRespin() => SetForcedOutcome(SymbolType.Seven, SymbolType.Seven, SymbolType.Cherry);
+
+        [ContextMenu("Reset to Random RNG")]
+        public void ResetToRandomRNG() => SetForcedOutcome(null, null, null);
     }
 }
