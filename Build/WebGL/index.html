@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Classic Slot Machine - WebGL Build</title>
+  <link rel="icon" type="image/png" href="assets/slot-symbol1.png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: #0a0b16;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 1280px;
+      max-height: 720px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+      display: block;
+    }
+
+    #loading-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #1e1b4b 0%, #09090b 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading-title {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #f59e0b;
+      text-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+      margin-bottom: 20px;
+    }
+
+    .progress-bar-bg {
+      width: 320px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 7px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .progress-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #ef4444);
+      transition: width 0.2s ease;
+    }
+
+    #loading-text {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="loading-screen">
+      <div id="loading-title">SLOT MACHINE</div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div id="loading-text">Loading Assets...</div>
+    </div>
+    <canvas id="game-canvas" width="1280" height="720"></canvas>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
