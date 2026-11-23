@@ -1069,7 +1069,7 @@
     },
     {
       id: 'betSettings',
-      x: 546, y: 642, w: 164, h: 44,
+      x: 555, y: 641, w: 235, h: 46,
       label: '⚙️ BET SETTINGS',
       color: '#4f46e5',
       border: '#6366f1',
@@ -1079,37 +1079,14 @@
       }
     },
     {
-      id: 'paytable',
-      x: 725, y: 642, w: 110, h: 44,
-      label: 'PAYTABLE',
-      color: '#8b5cf6',
-      border: '#6d28d9',
-      action: () => {
-        playSound('btnClick', 0.7);
-        state.showPaytable = !state.showPaytable;
-        if (state.showPaytable) closeBetSettingsModal();
-      }
-    },
-    {
       id: 'sound',
-      x: 850, y: 642, w: 105, h: 44,
+      x: 825, y: 641, w: 150, h: 46,
       label: 'SOUND: ON',
-      color: '#475569',
-      border: '#334155',
+      color: '#334155',
+      border: '#475569',
       action: () => {
         isMuted = !isMuted;
         playSound('btnClick', 0.7);
-      }
-    },
-    {
-      id: 'tourBtn',
-      x: 970, y: 642, w: 58, h: 44,
-      label: '❓ TOUR',
-      color: '#0284c7',
-      border: '#0369a1',
-      action: () => {
-        playSound('btnClick', 0.6);
-        startOnboarding(true);
       }
     },
     {
@@ -1335,21 +1312,15 @@
     const nextImg = (hoveredButtonId === 'betNext') ? images.btnNextHover : images.btnNextNorm;
     if (nextImg) ctx.drawImage(nextImg, nextBtn.x, nextBtn.y, nextBtn.w, nextBtn.h);
 
-    // D. Bet Settings Button (Replaced Max Bet Button directly on console)
+    // D. Bet Settings Button (Spacious and prominent console button)
     drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'betSettings'));
 
-    // E. Paytable Button
-    drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'paytable'));
-
-    // F. Sound Toggle Button
+    // E. Sound Toggle Button
     const sndBtn = UI_BUTTONS.find(b => b.id === 'sound');
     if (sndBtn) {
       sndBtn.label = isMuted ? 'SOUND: OFF' : 'SOUND: ON';
       drawSimpleButton(ctx, sndBtn);
     }
-
-    // G. Walkthrough Tour Button
-    drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'tourBtn'));
 
     // H. Spin Button (Right Side Large)
     drawLargeActionButton(ctx, UI_BUTTONS.find(b => b.id === 'spin'), state.isSpinning);
@@ -1707,32 +1678,26 @@
   const ONBOARDING_STEPS = [
     {
       title: '🎰 Welcome to Classic Slot Machine!',
-      badge: 'STEP 1 OF 5 · THE OBJECTIVE',
+      badge: 'STEP 1 OF 4 · THE OBJECTIVE',
       desc: 'Match <strong>3 identical symbols</strong> along the center payline to win! By default, strict rules apply where all 3 reels must match for an authentic, fair slot experience.',
       target: { x: MACHINE_X + 225, y: MACHINE_Y + 242, w: 374, h: 216 }
     },
     {
       title: '⚙️ Bet Settings & Custom Rules',
-      badge: 'STEP 2 OF 5 · WAGER & RULES',
-      desc: 'Use the <strong><</strong> and <strong>></strong> steppers to adjust your bet, or click <strong>⚙️ BET SETTINGS</strong> right here to manually configure bet amount, toggle winning combinations, and edit payout multipliers!',
-      target: { x: 370, y: 636, w: 345, h: 56 }
+      badge: 'STEP 2 OF 4 · WAGER & RULES',
+      desc: 'Use the <strong><</strong> and <strong>></strong> steppers to adjust your bet, or click the spacious <strong>⚙️ BET SETTINGS</strong> button right here to manually configure bet amount, toggle winning combinations, and edit payout multipliers!',
+      target: { x: 370, y: 636, w: 425, h: 56 }
     },
     {
       title: '🕹️ Pull the Lever or Hit SPIN',
-      badge: 'STEP 3 OF 5 · CONTROLS',
+      badge: 'STEP 3 OF 4 · CONTROLS',
       desc: 'Click or drag down the <strong>Mechanical Lever</strong> on the right, press the large <strong>SPIN</strong> button, or hit the <strong>SPACEBAR</strong> on your keyboard to spin the reels!',
       target: { x: MACHINE_X + 680, y: MACHINE_Y + 275, w: 120, h: 330 }
     },
     {
-      title: '📜 Paytable & Bonus Features',
-      badge: 'STEP 4 OF 5 · BONUSES',
-      desc: 'Click <strong>PAYTABLE</strong> to inspect live multipliers. Land <strong>3 Bells</strong> to trigger <strong>5 Free Spins</strong> with an automatic <strong>2X Multiplier</strong> on all payouts!',
-      target: { x: 720, y: 636, w: 120, h: 56 }
-    },
-    {
       title: '🪙 You’re Ready to Play!',
-      badge: 'STEP 5 OF 5 · BANKROLL',
-      desc: 'You start with <strong>1,000 complimentary coins</strong>. Click the <strong>❓ TOUR</strong> button on the console bar anytime to replay this tour. Good luck & enjoy the game!',
+      badge: 'STEP 4 OF 4 · READY TO PLAY',
+      desc: 'You start with <strong>1,000 complimentary coins</strong>. Adjust your bet and customize your winning combinations in <strong>BET SETTINGS</strong> anytime. Have fun & good luck!',
       target: { x: 50, y: 636, w: 315, h: 56 }
     }
   ];
@@ -1849,7 +1814,6 @@
   }
 
   function setupRuleEngineUI() {
-    const howToPlayBtn = document.getElementById('how-to-play-btn');
     const modal = document.getElementById('rules-modal');
     const closeBtn = document.getElementById('close-rules-btn');
     const betInput = document.getElementById('cfg-bet-input');
@@ -1867,14 +1831,6 @@
     const obNext = document.getElementById('onboarding-next-btn');
     const obPrev = document.getElementById('onboarding-prev-btn');
     const obSkip = document.getElementById('onboarding-skip-btn');
-
-    if (howToPlayBtn) {
-      howToPlayBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        playSound('btnClick', 0.6);
-        startOnboarding(true);
-      });
-    }
 
     if (obNext) obNext.addEventListener('click', () => nextOnboardingStep());
     if (obPrev) obPrev.addEventListener('click', () => prevOnboardingStep());

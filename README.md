@@ -38,22 +38,20 @@ Then visit `http://localhost:8080`.
 ## 🌟 Game Features
 
 ### 1. Interactive Onboarding Walkthrough (First-Time Device Onboarding)
-When launching the game for the first time on any device, an **interactive 5-step spotlight onboarding walkthrough** automatically introduces the player to the game:
+When launching the game for the first time on any device, an **interactive 4-step spotlight onboarding walkthrough** automatically introduces the player to the game:
 - 💡 **Spotlight Focus Frame**: Dynamically tracks and illuminates the active feature on the arcade cabinet while dimming the background.
 - 🎯 **Step-by-Step Guidance**:
   1. **The 3-Reel Payline**: Explains the center payline win conditions and default strict rules.
-  2. **Bet Settings & Rules Configurator**: Demonstrates wager adjustments and the new **`⚙️ BET SETTINGS`** button on the console bar.
+  2. **Bet Settings & Rules Configurator**: Demonstrates wager adjustments and the prominent **`⚙️ BET SETTINGS`** button on the console bar.
   3. **Interactive Lever & Spin**: Shows how to pull the mechanical lever or press Spacebar/Spin.
-  4. **Paytable & Free Spins**: Explains symbol payouts, the 3-Bells Free Spins feature, and the 2X win multiplier.
-  5. **Bankroll & Tour Replay**: Welcomes the player with 1,000 complimentary coins and notes that the tour can be replayed anytime.
-- ❓ **Replay Anytime**: Click the **`❓ TOUR`** button on the bottom console bar or the top **`❓ HOW TO PLAY & WALKTHROUGH`** badge to restart the tour at any time.
+  4. **Bankroll & Ready to Play**: Welcomes the player with 1,000 complimentary coins and sets them ready to play.
 
 ---
 
 ### 2. Manual Bet Settings & Winning Rule Engine
-The previous `MAX BET` button has been replaced with the prominent **`⚙️ BET SETTINGS`** button on the main console bar:
+The previous `MAX BET` and `PAYTABLE` clutter has been replaced with the streamlined, extra-spacious **`⚙️ BET SETTINGS`** button directly on the main console bar:
 
-- ⚙️ **Access Bet Settings**: Click the **`⚙️ BET SETTINGS`** button directly on the bottom console, or click the **TOTAL BET** display.
+- ⚙️ **Access Bet Settings**: Click the prominent **`⚙️ BET SETTINGS`** button directly on the bottom console, or click the **TOTAL BET** display.
 - 💰 **Manual Bet Input**: Directly enter any bet amount in the numeric input field (e.g. `25`, `77`, `250`), use `-10`/`+10` stepper buttons, or click chip presets (`25`, `50`, `100`, `250`, `500`).
 - ⭐ **Strict Assignment Rule (Default)**: Conforms strictly to the assignment requirement: **"Player wins when all slots have the same symbol"**. Secondary rules such as 2-cherries or respin are **disabled by default**, so only 3 matching symbols win!
 - ⚖️ **Toggle Any Combination**: Enable or disable any winning condition with a single click. Want only 7-7-7 to pay out? Simply uncheck the other symbols.
@@ -78,12 +76,12 @@ The previous `MAX BET` button has been replaced with the prominent **`⚙️ BET
 - ⌨️ **Full Keyboard Accessibility**:
   - `Space` / `Enter`: Spin the reels or progress onboarding.
   - `B`: Toggle Bet Settings modal.
-  - `P`: Toggle Paytable modal.
+  - `P`: Toggle Bet Settings modal (rules & payouts).
   - `M`: Toggle Sound on/off.
   - `A`: Toggle Auto Spin.
   - `R`: Reload free coins when bankrupt.
   - `Escape`: Close any open modal or dismiss walkthrough.
-- 📱 **Non-Overlapping Pixel-Perfect Layout**: Redesigned console bar separates Coin Balance, Last Win, Total Bet steppers, Bet Settings, Paytable, Sound, and Tour buttons with clean dividers.
+- 📱 **Spacious Zero-Overlap Console Bar**: Clean, elegant separation between Coin Balance, Last Win, Total Bet steppers, Bet Settings (235px wide), and Sound Toggle.
 - 🔊 **Safe WebAudio Unlock**: Auto-unlocks audio context on initial keypress or touch without throwing unhandled browser autoplay rejections.
 
 ---

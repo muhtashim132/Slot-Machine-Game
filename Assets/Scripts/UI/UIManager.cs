@@ -28,7 +28,6 @@ namespace SlotMachine.UI
         [SerializeField] private Button betSettingsButton;
         [SerializeField] private Button increaseBetButton;
         [SerializeField] private Button decreaseBetButton;
-        [SerializeField] private Button paytableButton;
         [SerializeField] private Button soundToggleButton;
 
         [Header("Modals & Overlays")]
@@ -70,9 +69,6 @@ namespace SlotMachine.UI
 
             if (decreaseBetButton != null)
                 decreaseBetButton.onClick.AddListener(() => GameManager.Instance.DecreaseBet());
-
-            if (paytableButton != null)
-                paytableButton.onClick.AddListener(TogglePaytable);
 
             if (soundToggleButton != null)
                 soundToggleButton.onClick.AddListener(ToggleSound);
