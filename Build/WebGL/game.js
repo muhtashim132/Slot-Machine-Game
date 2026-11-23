@@ -409,12 +409,219 @@
     }
   }
 
+  // --- Dynamic Rule Templates & Storage ---
+  const RULE_TEMPLATES = {
+    assignment: [
+      {
+        id: 'rule_777',
+        name: '★ 7-7-7 (Triple Seven)',
+        symbol: SYMBOL_TYPES.SEVEN,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 100,
+        bonus: 'NONE',
+        enabled: true,
+        title: '★ GRAND JACKPOT! (3x Seven) ★'
+      },
+      {
+        id: 'rule_bar',
+        name: '✦ BAR-BAR-BAR',
+        symbol: SYMBOL_TYPES.BAR,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 50,
+        bonus: 'NONE',
+        enabled: true,
+        title: '✦ MEGA WIN! (3x BAR) ✦'
+      },
+      {
+        id: 'rule_bell',
+        name: '🔔 BELL-BELL-BELL',
+        symbol: SYMBOL_TYPES.BELL,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 25,
+        bonus: 'FREE_SPINS',
+        enabled: true,
+        title: '🔔 BELL BONANZA! (+5 FREE SPINS) 🔔'
+      },
+      {
+        id: 'rule_cherry_3',
+        name: '🍒 CHERRY-CHERRY-CHERRY',
+        symbol: SYMBOL_TYPES.CHERRY,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 10,
+        bonus: 'NONE',
+        enabled: true,
+        title: '🍒 SWEET CHERRY WIN! 🍒'
+      },
+      {
+        id: 'rule_cherry_2',
+        name: '🍒 Double Cherries',
+        symbol: SYMBOL_TYPES.CHERRY,
+        condition: 'COUNT_SPECIFIC',
+        requiredCount: 2,
+        multiplier: 2,
+        bonus: 'NONE',
+        enabled: false, // Disabled by default in assignment mode
+        title: '🍒 DOUBLE CHERRIES WIN! 🍒'
+      },
+      {
+        id: 'rule_respin',
+        name: '⚡ Lucky Respin (Matching Pair)',
+        symbol: -1,
+        condition: 'ANY_PAIR_RESPIN',
+        requiredCount: 2,
+        multiplier: 0,
+        bonus: 'RESPIN',
+        enabled: false, // Disabled by default in assignment mode
+        title: '⚡ LUCKY RESPIN! ⚡'
+      }
+    ],
+    arcade: [
+      {
+        id: 'rule_777',
+        name: '★ 7-7-7 (Triple Seven)',
+        symbol: SYMBOL_TYPES.SEVEN,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 100,
+        bonus: 'NONE',
+        enabled: true,
+        title: '★ GRAND JACKPOT! (3x Seven) ★'
+      },
+      {
+        id: 'rule_bar',
+        name: '✦ BAR-BAR-BAR',
+        symbol: SYMBOL_TYPES.BAR,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 50,
+        bonus: 'NONE',
+        enabled: true,
+        title: '✦ MEGA WIN! (3x BAR) ✦'
+      },
+      {
+        id: 'rule_bell',
+        name: '🔔 BELL-BELL-BELL',
+        symbol: SYMBOL_TYPES.BELL,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 25,
+        bonus: 'FREE_SPINS',
+        enabled: true,
+        title: '🔔 BELL BONANZA! (+5 FREE SPINS) 🔔'
+      },
+      {
+        id: 'rule_cherry_3',
+        name: '🍒 CHERRY-CHERRY-CHERRY',
+        symbol: SYMBOL_TYPES.CHERRY,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 10,
+        bonus: 'NONE',
+        enabled: true,
+        title: '🍒 SWEET CHERRY WIN! 🍒'
+      },
+      {
+        id: 'rule_cherry_2',
+        name: '🍒 Double Cherries',
+        symbol: SYMBOL_TYPES.CHERRY,
+        condition: 'COUNT_SPECIFIC',
+        requiredCount: 2,
+        multiplier: 2,
+        bonus: 'NONE',
+        enabled: true,
+        title: '🍒 DOUBLE CHERRIES WIN! 🍒'
+      },
+      {
+        id: 'rule_respin',
+        name: '⚡ Lucky Respin (Matching Pair)',
+        symbol: -1,
+        condition: 'ANY_PAIR_RESPIN',
+        requiredCount: 2,
+        multiplier: 0,
+        bonus: 'RESPIN',
+        enabled: true,
+        title: '⚡ LUCKY RESPIN! ⚡'
+      }
+    ],
+    highroller: [
+      {
+        id: 'rule_777',
+        name: '★ 7-7-7 (Mega Jackpot)',
+        symbol: SYMBOL_TYPES.SEVEN,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 250,
+        bonus: 'NONE',
+        enabled: true,
+        title: '★ GRAND JACKPOT! (250x) ★'
+      },
+      {
+        id: 'rule_bar',
+        name: '✦ BAR-BAR-BAR (Super Win)',
+        symbol: SYMBOL_TYPES.BAR,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 100,
+        bonus: 'NONE',
+        enabled: true,
+        title: '✦ SUPER MEGA WIN! (100x) ✦'
+      },
+      {
+        id: 'rule_bell',
+        name: '🔔 BELL-BELL-BELL',
+        symbol: SYMBOL_TYPES.BELL,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 50,
+        bonus: 'FREE_SPINS',
+        enabled: true,
+        title: '🔔 BELL BONANZA! (50x + 5 Free Spins) 🔔'
+      },
+      {
+        id: 'rule_cherry_3',
+        name: '🍒 CHERRY-CHERRY-CHERRY',
+        symbol: SYMBOL_TYPES.CHERRY,
+        condition: 'ALL_MATCH_SPECIFIC',
+        requiredCount: 3,
+        multiplier: 20,
+        bonus: 'NONE',
+        enabled: true,
+        title: '🍒 SWEET CHERRIES! (20x) 🍒'
+      }
+    ]
+  };
+
+  function loadSavedRules() {
+    try {
+      const saved = localStorage.getItem('slot_machine_custom_rules');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Could not load custom rules', e);
+    }
+    return JSON.parse(JSON.stringify(RULE_TEMPLATES.assignment));
+  }
+
+  function saveActiveRules() {
+    try {
+      localStorage.setItem('slot_machine_custom_rules', JSON.stringify(state.activeRules));
+    } catch (e) {
+      console.warn('Could not save custom rules', e);
+    }
+  }
+
   // --- Game State & Economy ---
   const state = {
     coins: 1000,
     betIndex: 0,
     customBet: 10,
-    forcedOutcome: [null, null, null], // [r1, r2, r3] manually set winning combination
+    activeRules: loadSavedRules(),
     lastWin: 0,
     totalWon: 0,
     statusText: 'Pull Lever or Press SPIN to Play!',
@@ -434,6 +641,14 @@
     respinIndex: -1
   };
 
+  // Initialize saved custom bet if stored
+  try {
+    const savedBet = localStorage.getItem('slot_machine_custom_bet');
+    if (savedBet) {
+      state.customBet = Math.max(1, parseInt(savedBet) || 10);
+    }
+  } catch (e) {}
+
   function getCurrentBet() {
     return Math.max(1, state.customBet || 10);
   }
@@ -441,58 +656,13 @@
   function setCustomBet(val) {
     const amount = Math.max(1, parseInt(val) || 10);
     state.customBet = amount;
-    const input = document.getElementById('manual-bet-input');
-    if (input && document.activeElement !== input) {
-      input.value = amount;
+    const cfgInput = document.getElementById('cfg-bet-input');
+    if (cfgInput && document.activeElement !== cfgInput) {
+      cfgInput.value = amount;
     }
-    updateSimulatorPreview();
-  }
-
-  function setForcedReel(reelIndex, symbolVal) {
-    if (symbolVal === 'random' || symbolVal === null || symbolVal === undefined) {
-      state.forcedOutcome[reelIndex] = null;
-    } else {
-      state.forcedOutcome[reelIndex] = parseInt(symbolVal);
-    }
-    updateSimulatorPreview();
-  }
-
-  function updateSimulatorPreview() {
-    const r1 = state.forcedOutcome[0];
-    const r2 = state.forcedOutcome[1];
-    const r3 = state.forcedOutcome[2];
-    const bet = getCurrentBet();
-
-    const symLabels = ['★ 7', '✦ BAR', '🔔 BELL', '🍒 CHERRY'];
-    const c1 = r1 !== null ? symLabels[r1] : 'Random';
-    const c2 = r2 !== null ? symLabels[r2] : 'Random';
-    const c3 = r3 !== null ? symLabels[r3] : 'Random';
-
-    const comboEl = document.getElementById('preview-combo');
-    const condEl = document.getElementById('preview-condition');
-    const payEl = document.getElementById('preview-payout');
-
-    if (comboEl) comboEl.textContent = `${c1} | ${c2} | ${c3}`;
-
-    if (r1 !== null && r1 === r2 && r2 === r3) {
-      const mults = [100, 50, 25, 10];
-      const titles = ['★ Grand Jackpot (100x)', '✦ Mega Win (50x)', '🔔 Bell Bonanza (+5 Free Spins, 25x)', '🍒 Sweet Cherries (10x)'];
-      const mult = mults[r1];
-      if (condEl) condEl.textContent = titles[r1];
-      if (payEl) payEl.textContent = `+${(mult * bet).toLocaleString()} Coins (${mult}x)`;
-    } else if (r1 === 3 && r2 === 3 && r3 !== 3) {
-      if (condEl) condEl.textContent = '🍒 Double Cherries (2x)';
-      if (payEl) payEl.textContent = `+${(2 * bet).toLocaleString()} Coins (2x)`;
-    } else if (r1 !== null && r2 !== null && r1 === r2 && r1 !== 3) {
-      if (condEl) condEl.textContent = `⚡ Lucky Respin (Hold & Respin Reel 3)`;
-      if (payEl) payEl.textContent = `Triggers Free Respin`;
-    } else if (r1 === null || r2 === null || r3 === null) {
-      if (condEl) condEl.textContent = 'Dynamic RNG Outcome';
-      if (payEl) payEl.textContent = `Evaluated at Spin`;
-    } else {
-      if (condEl) condEl.textContent = 'No Match (Standard Loss)';
-      if (payEl) payEl.textContent = `+0 Coins`;
-    }
+    try {
+      localStorage.setItem('slot_machine_custom_bet', amount.toString());
+    } catch (e) {}
   }
 
   // --- Game Mechanics & Win Logic ---
@@ -527,14 +697,11 @@
     // 2. Play spin sound loop
     startReelSpinLoop();
 
-    // 3. Outcome generation (Use manually set outcome if specified, else fair RNG)
-    const f1 = state.forcedOutcome[0];
-    const f2 = state.forcedOutcome[1];
-    const f3 = state.forcedOutcome[2];
+    // 3. Fair RNG Outcome generation
     state.currentOutcome = [
-      f1 !== null ? f1 : getRandomSymbol(),
-      f2 !== null ? f2 : getRandomSymbol(),
-      f3 !== null ? f3 : getRandomSymbol()
+      getRandomSymbol(),
+      getRandomSymbol(),
+      getRandomSymbol()
     ];
 
     // 4. Start reels spinning
@@ -599,62 +766,77 @@
     const isFreeSpin = state.freeSpins > 0;
     const bonusMult = isFreeSpin ? 2.0 : 1.0;
 
-    // 1. Check 3-of-a-kind (Main Win)
-    if (r1 === r2 && r2 === r3) {
-      highlightWinningReels();
-      let mult = 0;
-      let title = '';
-      let isJackpot = false;
+    // Filter enabled rules configured manually by the player
+    const enabledRules = state.activeRules.filter(r => r.enabled);
 
-      if (r1 === SYMBOL_TYPES.SEVEN) {
-        mult = 100;
-        title = '★ GRAND JACKPOT! ★';
-        isJackpot = true;
-      } else if (r1 === SYMBOL_TYPES.BAR) {
-        mult = 50;
-        title = '✦ MEGA WIN! (3x BAR) ✦';
-      } else if (r1 === SYMBOL_TYPES.BELL) {
-        mult = 25;
-        title = '🔔 BELL BONANZA! (+5 FREE SPINS) 🔔';
+    let matchedWinRule = null;
+    let matchedRespinRule = null;
+    let respinLocks = null;
+
+    for (const rule of enabledRules) {
+      // Condition A: All 3 slots match a specific symbol
+      if (rule.condition === 'ALL_MATCH_SPECIFIC') {
+        if (r1 === rule.symbol && r2 === rule.symbol && r3 === rule.symbol) {
+          matchedWinRule = rule;
+          break;
+        }
+      }
+      // Condition B: All 3 slots match ANY identical symbol
+      else if (rule.condition === 'ALL_MATCH_ANY') {
+        if (r1 === r2 && r2 === r3) {
+          matchedWinRule = rule;
+          break;
+        }
+      }
+      // Condition C: Count of specific symbol
+      else if (rule.condition === 'COUNT_SPECIFIC') {
+        const count = [r1, r2, r3].filter(s => s === rule.symbol).length;
+        if (count === rule.requiredCount) {
+          matchedWinRule = rule;
+          break;
+        }
+      }
+      // Condition D: Matching pair triggers lucky respin
+      else if (rule.condition === 'ANY_PAIR_RESPIN') {
+        if (!isFreeSpin && !wasRespin) {
+          let lockA = -1, lockB = -1, respinTarget = -1;
+          if (r1 === r2 && (rule.symbol === -1 || r1 === rule.symbol)) {
+            lockA = 0; lockB = 1; respinTarget = 2;
+          } else if (r2 === r3 && (rule.symbol === -1 || r2 === rule.symbol)) {
+            lockA = 1; lockB = 2; respinTarget = 0;
+          } else if (r1 === r3 && (rule.symbol === -1 || r1 === rule.symbol)) {
+            lockA = 0; lockB = 2; respinTarget = 1;
+          }
+
+          if (respinTarget !== -1) {
+            matchedRespinRule = rule;
+            respinLocks = { lockA, lockB, respinTarget };
+          }
+        }
+      }
+    }
+
+    // 1. Process Winning Combination if matched
+    if (matchedWinRule) {
+      highlightWinningReels();
+      const isJackpot = matchedWinRule.multiplier >= 100;
+      const payout = Math.round(bet * matchedWinRule.multiplier * bonusMult);
+
+      if (matchedWinRule.bonus === 'FREE_SPINS') {
         state.freeSpins += 5;
-      } else if (r1 === SYMBOL_TYPES.CHERRY) {
-        mult = 10;
-        title = '🍒 SWEET CHERRY WIN! 🍒';
       }
 
-      const payout = Math.round(bet * mult * bonusMult);
-      awardWin(payout, title, isJackpot);
+      awardWin(payout, matchedWinRule.title || `${matchedWinRule.name} WIN!`, isJackpot);
       return;
     }
 
-    // 2. Check 2 Cherries
-    const cherries = state.currentOutcome.filter(s => s === SYMBOL_TYPES.CHERRY).length;
-    if (cherries === 2) {
-      highlightWinningReels();
-      const payout = Math.round(bet * 2 * bonusMult);
-      awardWin(payout, '🍒 DOUBLE CHERRIES WIN! 🍒', false);
+    // 2. Process Lucky Respin if enabled and matched
+    if (matchedRespinRule && respinLocks) {
+      triggerLuckyRespin(respinLocks.lockA, respinLocks.lockB, respinLocks.respinTarget);
       return;
     }
 
-    // 3. Lucky Respin Bonus (Two matching non-cherry symbols)
-    // Only trigger if not already a free spin AND not already after a respin
-    if (!isFreeSpin && !wasRespin) {
-      let lockA = -1, lockB = -1, respinTarget = -1;
-      if (r1 === r2 && r1 !== SYMBOL_TYPES.CHERRY) {
-        lockA = 0; lockB = 1; respinTarget = 2;
-      } else if (r2 === r3 && r2 !== SYMBOL_TYPES.CHERRY) {
-        lockA = 1; lockB = 2; respinTarget = 0;
-      } else if (r1 === r3 && r1 !== SYMBOL_TYPES.CHERRY) {
-        lockA = 0; lockB = 2; respinTarget = 1;
-      }
-
-      if (respinTarget !== -1) {
-        triggerLuckyRespin(lockA, lockB, respinTarget);
-        return;
-      }
-    }
-
-    // No win
+    // 3. No matching win rule
     state.statusText = wasRespin ? 'Respin finished! Better luck next spin.' : 'Better luck next spin! Try again.';
     concludeSpin();
   }
@@ -814,8 +996,15 @@
       x: 524, y: 642, w: 92, h: 42,
       isTransparent: true,
       action: () => {
-        const panel = document.getElementById('simulator-panel');
-        if (panel) panel.classList.toggle('hidden');
+        const modal = document.getElementById('rules-modal');
+        if (modal) {
+          modal.classList.toggle('hidden');
+          if (!modal.classList.contains('hidden')) {
+            renderRulesTable();
+            const cfgInput = document.getElementById('cfg-bet-input');
+            if (cfgInput) cfgInput.value = state.customBet;
+          }
+        }
         playSound('btnClick', 0.6);
       }
     },
@@ -1168,9 +1357,9 @@
 
     // Modal Title
     ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 28px "Segoe UI", sans-serif';
+    ctx.font = 'bold 26px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('PAYOUT TABLE & RULES', mx + mw / 2, my + 55);
+    ctx.fillText('ACTIVE WINNING RULES & PAYTABLE', mx + mw / 2, my + 52);
 
     // Close Button 'X'
     const closeImg = hoveredButtonId === 'modalClose' ? images.btnCloseHover : images.btnCloseNorm;
@@ -1178,55 +1367,59 @@
       ctx.drawImage(closeImg, mx + mw - 65, my + 20, 44, 44);
     }
 
-    // Paytable Grid
-    const items = [
-      { sym: images.sym0, name: '7-7-7', desc: 'Grand Jackpot', pay: '100x Bet' },
-      { sym: images.sym1, name: 'BAR-BAR-BAR', desc: 'Mega Win', pay: '50x Bet' },
-      { sym: images.sym2, name: 'BELL-BELL-BELL', desc: 'Big Win + 5 Free Spins', pay: '25x Bet' },
-      { sym: images.sym3, name: 'CHERRY-CHERRY-CHERRY', desc: 'Sweet Win', pay: '10x Bet' },
-      { sym: images.sym3, name: 'Any 2 Cherries', desc: 'Minor Win', pay: '2x Bet' }
-    ];
+    // Filter enabled rules to show what currently pays
+    const visibleRules = state.activeRules.filter(r => r.enabled).slice(0, 6);
+    const symMap = [images.sym0, images.sym1, images.sym2, images.sym3];
 
-    items.forEach((item, idx) => {
-      const rowY = my + 95 + idx * 62;
+    visibleRules.forEach((rule, idx) => {
+      const rowY = my + 82 + idx * 54;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.fillRect(mx + 60, rowY, mw - 120, 52);
+      ctx.fillRect(mx + 60, rowY, mw - 120, 46);
 
-      if (item.sym) {
-        ctx.drawImage(item.sym, mx + 75, rowY + 4, 44, 44);
+      const ruleSym = (rule.symbol >= 0 && rule.symbol < 4) ? symMap[rule.symbol] : null;
+      if (ruleSym) {
+        ctx.drawImage(ruleSym, mx + 75, rowY + 3, 40, 40);
       }
 
       ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 16px "Segoe UI", sans-serif';
+      ctx.font = 'bold 15px "Segoe UI", sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(item.name, mx + 135, rowY + 30);
+      ctx.fillText(rule.name, mx + 130, rowY + 28);
+
+      let condLabel = 'All 3 Slots Match';
+      if (rule.condition === 'COUNT_SPECIFIC') condLabel = `At Least ${rule.requiredCount} Match`;
+      else if (rule.condition === 'ANY_PAIR_RESPIN') condLabel = 'Matching Pair Respin';
+      else if (rule.condition === 'ALL_MATCH_ANY') condLabel = 'Any 3 Matching';
 
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '14px "Segoe UI", sans-serif';
-      ctx.fillText(item.desc, mx + 380, rowY + 30);
+      ctx.font = '13px "Segoe UI", sans-serif';
+      ctx.fillText(condLabel, mx + 380, rowY + 28);
 
       ctx.fillStyle = '#f59e0b';
-      ctx.font = 'bold 18px monospace';
+      ctx.font = 'bold 17px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(item.pay, mx + mw - 85, rowY + 30);
+      const payLabel = rule.multiplier > 0 ? `${rule.multiplier}x Bet` : (rule.bonus === 'RESPIN' ? 'Free Respin' : 'Active');
+      ctx.fillText(payLabel, mx + mw - 85, rowY + 28);
     });
 
-    // Bonus Features Explanation
-    const bonusY = my + 415;
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 15px "Segoe UI", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('⚡ BONUS FEATURES:', mx + 60, bonusY);
+    if (visibleRules.length === 0) {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 16px "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠️ No winning rules enabled! Click ⚙️ SETTINGS to enable rules.', mx + mw / 2, my + 200);
+    }
 
-    ctx.font = '13px "Segoe UI", sans-serif';
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText('• Lucky Respin: Land 2 matching non-cherry symbols to lock them and respin the 3rd reel for free!', mx + 60, bonusY + 22);
-    ctx.fillText('• Free Spins: 3 Bells trigger 5 Free Spins with an automatic 2X Win Multiplier on all payouts.', mx + 60, bonusY + 42);
+    // Configurator hint
+    const noteY = my + 420;
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 14px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚙️ Customize winning combinations, multipliers, and bet amounts via the Settings button.', mx + mw / 2, noteY);
 
     // Done Button (btn_yes_normal.png)
     const yesImg = images.btnYesNorm;
     if (yesImg) {
-      ctx.drawImage(yesImg, mx + (mw - 140) / 2, my + 480, 140, 50);
+      ctx.drawImage(yesImg, mx + (mw - 140) / 2, my + 465, 140, 50);
     }
 
     ctx.restore();
@@ -1286,44 +1479,181 @@
     return col;
   }
 
-  function setupSimulatorControls() {
-    const toggleBtn = document.getElementById('toggle-simulator-btn');
-    const panel = document.getElementById('simulator-panel');
-    const closeBtn = document.getElementById('close-simulator-btn');
-    const betInput = document.getElementById('manual-bet-input');
-    const betMinus = document.getElementById('bet-minus-btn');
-    const betPlus = document.getElementById('bet-plus-btn');
-    const chipBtns = document.querySelectorAll('.chip-btn');
-    const r1Select = document.getElementById('reel1-select');
-    const r2Select = document.getElementById('reel2-select');
-    const r3Select = document.getElementById('reel3-select');
-    const presetBtns = document.querySelectorAll('.preset-btn');
-    const simSpinBtn = document.getElementById('execute-simulation-btn');
+  // --- Dynamic Rule Engine UI & Manual Configuration ---
+  function renderRulesTable() {
+    const tbody = document.getElementById('rules-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
-    if (toggleBtn && panel) {
+    const symIcons = [
+      'assets/slot-symbol1.png',
+      'assets/slot-symbol4.png',
+      'assets/slot-symbol3.png',
+      'assets/slot-symbol2.png'
+    ];
+
+    state.activeRules.forEach((rule, idx) => {
+      const tr = document.createElement('tr');
+      tr.style.opacity = rule.enabled ? '1.0' : '0.45';
+
+      // 1. Active Checkbox
+      const tdActive = document.createElement('td');
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.className = 'rule-checkbox';
+      chk.checked = rule.enabled;
+      chk.title = 'Enable / Disable this winning rule';
+      chk.addEventListener('change', () => {
+        rule.enabled = chk.checked;
+        tr.style.opacity = rule.enabled ? '1.0' : '0.45';
+        playSound('btnClick', 0.5);
+        saveActiveRules();
+      });
+      tdActive.appendChild(chk);
+      tr.appendChild(tdActive);
+
+      // 2. Combination Name & Icon
+      const tdName = document.createElement('td');
+      tdName.className = 'rule-name-cell';
+      if (rule.symbol >= 0 && rule.symbol < 4) {
+        const img = document.createElement('img');
+        img.src = symIcons[rule.symbol];
+        tdName.appendChild(img);
+      }
+      const spanName = document.createElement('span');
+      spanName.textContent = rule.name;
+      tdName.appendChild(spanName);
+      tr.appendChild(tdName);
+
+      // 3. Condition Badge
+      const tdCond = document.createElement('td');
+      const condBadge = document.createElement('span');
+      condBadge.className = 'rule-condition-badge';
+      let condText = 'All 3 Match';
+      if (rule.condition === 'COUNT_SPECIFIC') condText = `Count = ${rule.requiredCount}`;
+      else if (rule.condition === 'ALL_MATCH_ANY') condText = 'Any 3 Match';
+      else if (rule.condition === 'ANY_PAIR_RESPIN') condText = 'Matching Pair';
+      condBadge.textContent = condText;
+      tdCond.appendChild(condBadge);
+      tr.appendChild(tdCond);
+
+      // 4. Multiplier Input
+      const tdMult = document.createElement('td');
+      if (rule.condition !== 'ANY_PAIR_RESPIN' || rule.multiplier > 0) {
+        const multInput = document.createElement('input');
+        multInput.type = 'number';
+        multInput.className = 'multiplier-input';
+        multInput.value = rule.multiplier;
+        multInput.min = '0';
+        multInput.max = '1000';
+        multInput.addEventListener('change', (e) => {
+          rule.multiplier = Math.max(0, parseInt(e.target.value) || 0);
+          saveActiveRules();
+        });
+        const xLabel = document.createElement('span');
+        xLabel.textContent = 'x';
+        xLabel.style.color = '#94a3b8';
+        xLabel.style.marginLeft = '4px';
+        tdMult.appendChild(multInput);
+        tdMult.appendChild(xLabel);
+      } else {
+        tdMult.textContent = '—';
+        tdMult.style.color = '#64748b';
+      }
+      tr.appendChild(tdMult);
+
+      // 5. Bonus Badge
+      const tdBonus = document.createElement('td');
+      const bBadge = document.createElement('span');
+      if (rule.bonus === 'FREE_SPINS') {
+        bBadge.className = 'bonus-badge free-spins';
+        bBadge.textContent = '+5 Free Spins (2x)';
+      } else if (rule.bonus === 'RESPIN') {
+        bBadge.className = 'bonus-badge respin';
+        bBadge.textContent = '⚡ Lucky Respin';
+      } else {
+        bBadge.className = 'bonus-badge none';
+        bBadge.textContent = 'None';
+      }
+      tdBonus.appendChild(bBadge);
+      tr.appendChild(tdBonus);
+
+      // 6. Delete Action
+      const tdDel = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-rule-btn';
+      delBtn.innerHTML = '🗑️';
+      delBtn.title = 'Remove rule';
+      delBtn.addEventListener('click', () => {
+        state.activeRules.splice(idx, 1);
+        renderRulesTable();
+        saveActiveRules();
+        playSound('btnClick', 0.5);
+      });
+      tdDel.appendChild(delBtn);
+      tr.appendChild(tdDel);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function applyRuleTemplate(templateKey) {
+    if (!RULE_TEMPLATES[templateKey]) return;
+    state.activeRules = JSON.parse(JSON.stringify(RULE_TEMPLATES[templateKey]));
+    renderRulesTable();
+    saveActiveRules();
+    flashSaveToast('Rule preset applied live!');
+    playSound('btnClick', 0.6);
+  }
+
+  function flashSaveToast(msg = '✓ Rules Applied Live!') {
+    const toast = document.getElementById('save-toast');
+    if (toast) {
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      setTimeout(() => toast.classList.remove('visible'), 2200);
+    }
+  }
+
+  function setupRuleEngineUI() {
+    const toggleBtn = document.getElementById('toggle-rules-btn');
+    const modal = document.getElementById('rules-modal');
+    const closeBtn = document.getElementById('close-rules-btn');
+    const betInput = document.getElementById('cfg-bet-input');
+    const betMinus = document.getElementById('cfg-bet-minus');
+    const betPlus = document.getElementById('cfg-bet-plus');
+    const chipBtns = document.querySelectorAll('.preset-chip');
+    const tplAssignment = document.getElementById('tpl-assignment');
+    const tplArcade = document.getElementById('tpl-arcade');
+    const tplHighroller = document.getElementById('tpl-highroller');
+    const addRuleBtn = document.getElementById('add-rule-btn');
+    const resetRulesBtn = document.getElementById('reset-rules-btn');
+    const saveRulesBtn = document.getElementById('save-rules-btn');
+
+    if (toggleBtn && modal) {
       toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         playSound('btnClick', 0.6);
-        panel.classList.toggle('hidden');
-        updateSimulatorPreview();
+        modal.classList.toggle('hidden');
+        if (!modal.classList.contains('hidden')) {
+          renderRulesTable();
+          if (betInput) betInput.value = state.customBet;
+        }
       });
     }
 
-    if (closeBtn && panel) {
+    if (closeBtn && modal) {
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         playSound('btnClick', 0.6);
-        panel.classList.add('hidden');
+        modal.classList.add('hidden');
       });
     }
 
     if (betInput) {
-      betInput.addEventListener('input', (e) => {
-        setCustomBet(e.target.value);
-      });
-      betInput.addEventListener('change', (e) => {
-        setCustomBet(e.target.value);
-      });
+      betInput.value = state.customBet;
+      betInput.addEventListener('input', (e) => setCustomBet(e.target.value));
+      betInput.addEventListener('change', (e) => setCustomBet(e.target.value));
     }
 
     if (betMinus) {
@@ -1355,41 +1685,66 @@
       });
     });
 
-    [r1Select, r2Select, r3Select].forEach((sel, idx) => {
-      if (sel) {
-        sel.addEventListener('change', (e) => {
-          setForcedReel(idx, e.target.value);
-        });
-      }
-    });
+    if (tplAssignment) tplAssignment.addEventListener('click', () => applyRuleTemplate('assignment'));
+    if (tplArcade) tplArcade.addEventListener('click', () => applyRuleTemplate('arcade'));
+    if (tplHighroller) tplHighroller.addEventListener('click', () => applyRuleTemplate('highroller'));
 
-    presetBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    if (addRuleBtn) {
+      addRuleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        const cond = document.getElementById('new-rule-condition').value;
+        const sym = parseInt(document.getElementById('new-rule-symbol').value);
+        const mult = Math.max(1, parseInt(document.getElementById('new-rule-multiplier').value) || 10);
+        const bonus = document.getElementById('new-rule-bonus').value;
+
+        const symNames = ['Seven', 'BAR', 'Bell', 'Cherry'];
+        const symName = symNames[sym] || 'Symbol';
+        let ruleName = `Custom ${symName}`;
+        if (cond === 'ALL_MATCH_SPECIFIC') ruleName = `3x ${symName}`;
+        else if (cond === 'COUNT_SPECIFIC') ruleName = `2x ${symName}`;
+        else if (cond === 'ALL_MATCH_ANY') ruleName = `3x Any Matching`;
+
+        const newRule = {
+          id: 'custom_' + Date.now(),
+          name: ruleName,
+          symbol: cond === 'ALL_MATCH_ANY' ? -1 : sym,
+          condition: cond,
+          requiredCount: cond === 'COUNT_SPECIFIC' ? 2 : 3,
+          multiplier: mult,
+          bonus: bonus,
+          enabled: true,
+          title: `★ ${ruleName.toUpperCase()} WIN! ★`
+        };
+
+        state.activeRules.push(newRule);
+        renderRulesTable();
+        saveActiveRules();
+        flashSaveToast('New custom winning rule added!');
         playSound('btnClick', 0.6);
-        const r1 = btn.getAttribute('data-r1');
-        const r2 = btn.getAttribute('data-r2');
-        const r3 = btn.getAttribute('data-r3');
-
-        if (r1Select) r1Select.value = r1;
-        if (r2Select) r2Select.value = r2;
-        if (r3Select) r3Select.value = r3;
-
-        setForcedReel(0, r1);
-        setForcedReel(1, r2);
-        setForcedReel(2, r3);
-      });
-    });
-
-    if (simSpinBtn) {
-      simSpinBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (panel) panel.classList.add('hidden');
-        executeSpin();
       });
     }
 
-    updateSimulatorPreview();
+    if (resetRulesBtn) {
+      resetRulesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyRuleTemplate('assignment');
+      });
+    }
+
+    if (saveRulesBtn) {
+      saveRulesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveActiveRules();
+        flashSaveToast('✓ Rules & Bet Saved Successfully!');
+        playSound('btnClick', 0.7);
+        setTimeout(() => {
+          if (modal) modal.classList.add('hidden');
+        }, 600);
+      });
+    }
+
+    // Initial render of rules table
+    renderRulesTable();
   }
 
   // --- Main Initialization ---
@@ -1409,8 +1764,8 @@
       e.preventDefault();
     }, { passive: false });
 
-    // Setup Manual Controls & Payout Simulator
-    setupSimulatorControls();
+    // Setup Custom Rule Engine & Manual Bet Configurator
+    setupRuleEngineUI();
 
     // Load All Images and Audio
     loadAssets(() => {

@@ -293,6 +293,31 @@ namespace SlotMachine.Core
         }
 
         /// <summary>
+        /// Manually toggles a winning rule on or off.
+        /// </summary>
+        public void SetWinningRuleEnabled(string ruleId, bool enabled)
+        {
+            PayoutTable.SetRuleEnabled(ruleId, enabled);
+        }
+
+        /// <summary>
+        /// Manually edits the payout multiplier for any rule.
+        /// </summary>
+        public void SetWinningRuleMultiplier(string ruleId, int multiplier)
+        {
+            PayoutTable.SetRuleMultiplier(ruleId, multiplier);
+        }
+
+        [ContextMenu("Apply Assignment Rules (3-Matching Only)")]
+        public void ApplyAssignmentRulesPreset() => PayoutTable.ResetToAssignmentRules();
+
+        [ContextMenu("Apply Arcade Rules (+2 Cherries & Respin)")]
+        public void ApplyArcadeRulesPreset() => PayoutTable.ApplyArcadeRules();
+
+        [ContextMenu("Apply High Roller Rules (250x, 100x)")]
+        public void ApplyHighRollerRulesPreset() => PayoutTable.ApplyHighRollerRules();
+
+        /// <summary>
         /// Manually forces a specific reel outcome to simulate winning combinations and verify payouts.
         /// </summary>
         public void SetForcedOutcome(SymbolType? r1, SymbolType? r2, SymbolType? r3)

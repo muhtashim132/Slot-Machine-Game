@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Classic Slot Machine - WebGL Build & Outcome Simulator</title>
+  <title>Classic Slot Machine - WebGL Build & Custom Rule Engine</title>
   <link rel="icon" type="image/png" href="assets/slot-symbol1.png">
   <style>
     * {
@@ -97,301 +97,436 @@
       color: #94a3b8;
     }
 
-    /* --- Simulator & Manual Controls Floating UI --- */
-    #toggle-simulator-btn {
+    /* --- Floating Trigger Button --- */
+    #toggle-rules-btn {
       position: absolute;
       top: 14px;
       left: 16px;
       z-index: 50;
-      background: rgba(30, 27, 75, 0.9);
+      background: rgba(30, 27, 75, 0.92);
       border: 1.5px solid #818cf8;
       color: #e0e7ff;
-      padding: 8px 16px;
+      padding: 9px 18px;
       border-radius: 20px;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+      gap: 7px;
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45);
       backdrop-filter: blur(8px);
       transition: all 0.2s ease;
     }
 
-    #toggle-simulator-btn:hover {
+    #toggle-rules-btn:hover {
       background: #4338ca;
       color: #fff;
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+      box-shadow: 0 6px 22px rgba(99, 102, 241, 0.65);
     }
 
-    #simulator-panel {
+    /* --- Custom Rules & Bet Configurator Modal --- */
+    #rules-modal {
       position: absolute;
       top: 14px;
       left: 16px;
-      width: 440px;
-      max-height: 680px;
-      background: rgba(15, 23, 42, 0.95);
+      right: 16px;
+      max-width: 680px;
+      max-height: 690px;
+      background: rgba(15, 23, 42, 0.97);
       border: 1.5px solid #818cf8;
-      border-radius: 12px;
-      padding: 16px 18px;
+      border-radius: 14px;
+      padding: 18px 22px;
       z-index: 60;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85), 0 0 25px rgba(99, 102, 241, 0.25);
-      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 30px rgba(99, 102, 241, 0.3);
+      backdrop-filter: blur(14px);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
     }
 
-    #simulator-panel.hidden {
+    #rules-modal.hidden {
       display: none;
     }
 
-    .panel-header {
+    .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 10px;
     }
 
-    .panel-title {
-      font-size: 14px;
+    .modal-title-box {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .modal-title {
+      font-size: 16px;
       font-weight: 800;
       letter-spacing: 0.5px;
       color: #fbbf24;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
     }
 
-    #close-simulator-btn {
+    .modal-subtitle {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    #close-rules-btn {
       background: transparent;
       border: none;
       color: #94a3b8;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
-      padding: 2px 6px;
+      padding: 4px 8px;
       border-radius: 4px;
     }
 
-    #close-simulator-btn:hover {
+    #close-rules-btn:hover {
       color: #fff;
       background: rgba(255, 255, 255, 0.1);
     }
 
-    .panel-body {
+    .modal-content {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       overflow-y: auto;
-      max-height: 590px;
-      padding-right: 2px;
+      max-height: 580px;
+      padding-right: 4px;
     }
 
-    .panel-section {
+    .config-section {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
       gap: 6px;
     }
 
-    .section-label {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      color: #94a3b8;
-      text-transform: uppercase;
-    }
-
-    .bet-input-row {
+    /* Bet Section */
+    .bet-config-row {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
-    #manual-bet-input {
-      width: 75px;
-      height: 32px;
-      background: #1e293b;
-      border: 1px solid #475569;
+    .bet-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    #cfg-bet-input {
+      width: 90px;
+      height: 34px;
+      background: #0f172a;
+      border: 1.5px solid #38bdf8;
       border-radius: 6px;
       color: #38bdf8;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 800;
       text-align: center;
       outline: none;
     }
 
-    #manual-bet-input:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    #cfg-bet-input:focus {
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
     }
 
-    .step-btn, .chip-btn {
-      height: 32px;
-      padding: 0 9px;
+    .stepper-btn, .preset-chip {
+      height: 34px;
+      padding: 0 11px;
       background: #1e293b;
-      border: 1px solid #334155;
+      border: 1px solid #475569;
       border-radius: 6px;
       color: #e2e8f0;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
-    .step-btn:hover, .chip-btn:hover {
+    .stepper-btn:hover, .preset-chip:hover {
       background: #334155;
       color: #fff;
-      border-color: #475569;
+      border-color: #64748b;
     }
 
-    .chip-btn[data-bet="max"] {
-      background: rgba(225, 29, 72, 0.2);
+    .preset-chip[data-bet="max"] {
+      background: rgba(225, 29, 72, 0.25);
       border-color: #e11d48;
-      color: #f43f5e;
+      color: #fb7185;
     }
 
-    .chip-btn[data-bet="max"]:hover {
+    .preset-chip[data-bet="max"]:hover {
       background: #e11d48;
       color: #fff;
     }
 
-    .reels-select-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-    }
-
-    .reel-picker {
+    /* Presets Section */
+    .templates-row {
       display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .reel-picker span {
-      font-size: 10px;
-      color: #94a3b8;
-      font-weight: 600;
-    }
-
-    .reel-picker select {
-      height: 32px;
-      background: #1e293b;
-      border: 1px solid #475569;
-      border-radius: 6px;
-      color: #f8fafc;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 0 4px;
-      outline: none;
-      cursor: pointer;
-    }
-
-    .reel-picker select:focus {
-      border-color: #f59e0b;
-    }
-
-    .presets-label {
-      font-size: 11px;
-      color: #94a3b8;
-      font-weight: 700;
-      margin-top: 2px;
-    }
-
-    .presets-row {
-      display: flex;
+      gap: 8px;
       flex-wrap: wrap;
-      gap: 5px;
     }
 
-    .preset-btn {
-      padding: 5px 9px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 4px;
-      color: #cbd5e1;
+    .template-btn {
+      padding: 7px 12px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid #6366f1;
+      border-radius: 6px;
+      color: #c7d2fe;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
     }
 
-    .preset-btn:hover {
+    .template-btn:hover {
+      background: #6366f1;
+      color: #fff;
+    }
+
+    .template-btn.primary-template {
       background: rgba(245, 158, 11, 0.2);
       border-color: #f59e0b;
       color: #fbbf24;
     }
 
-    .preset-btn.reset-btn {
-      background: rgba(56, 189, 248, 0.1);
-      border-color: #0284c7;
-      color: #38bdf8;
+    .template-btn.primary-template:hover {
+      background: #f59e0b;
+      color: #000;
     }
 
-    .preset-btn.reset-btn:hover {
-      background: #0284c7;
-      color: #fff;
+    /* Rules Table */
+    .rules-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
     }
 
-    /* Simulation Preview Card */
-    .simulation-preview-card {
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px dashed rgba(245, 158, 11, 0.4);
-      border-radius: 8px;
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .preview-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-    }
-
-    .preview-title {
+    .rules-table th {
+      text-align: left;
+      padding: 6px 8px;
       color: #94a3b8;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      text-transform: uppercase;
     }
 
-    .preview-value {
-      font-weight: 700;
+    .rules-table td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+    }
+
+    .rule-checkbox {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #10b981;
+    }
+
+    .rule-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
       color: #f1f5f9;
     }
 
-    .preview-value.highlight {
-      color: #10b981;
-      font-size: 12px;
-      font-family: monospace;
+    .rule-name-cell img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
     }
 
-    #execute-simulation-btn {
-      height: 40px;
+    .rule-condition-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 4px;
+      color: #38bdf8;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .multiplier-input {
+      width: 60px;
+      height: 28px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      color: #f59e0b;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+    }
+
+    .multiplier-input:focus {
+      border-color: #f59e0b;
+    }
+
+    .bonus-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .bonus-badge.free-spins {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid #f59e0b;
+    }
+
+    .bonus-badge.respin {
+      background: rgba(168, 85, 247, 0.2);
+      color: #c084fc;
+      border: 1px solid #a855f7;
+    }
+
+    .bonus-badge.none {
+      color: #64748b;
+    }
+
+    .delete-rule-btn {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .delete-rule-btn:hover {
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    /* Add Rule Form */
+    .add-rule-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 0.8fr 1fr auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .add-rule-row select, .add-rule-row input {
+      height: 32px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      color: #f8fafc;
+      font-size: 11px;
+      padding: 0 6px;
+      outline: none;
+    }
+
+    .add-rule-row button {
+      height: 32px;
+      padding: 0 12px;
+      background: #3b82f6;
+      border: 1px solid #60a5fa;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .add-rule-row button:hover {
+      background: #2563eb;
+    }
+
+    /* Footer Buttons */
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 12px;
+    }
+
+    .save-rules-btn {
+      height: 42px;
+      padding: 0 24px;
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       border: 1px solid #34d399;
       border-radius: 8px;
       color: #fff;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 800;
       letter-spacing: 0.5px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
+      gap: 8px;
       box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
       transition: all 0.2s ease;
     }
 
-    #execute-simulation-btn:hover {
+    .save-rules-btn:hover {
       background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
       transform: translateY(-1px);
       box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+    }
+
+    .reset-rules-btn {
+      background: transparent;
+      border: 1px solid #64748b;
+      color: #94a3b8;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .reset-rules-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    #save-toast {
+      color: #34d399;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #save-toast.visible {
+      opacity: 1;
     }
   </style>
 </head>
@@ -406,100 +541,104 @@
       <div id="loading-text">Loading Assets...</div>
     </div>
 
-    <!-- Toggle Button for Simulator & Manual Controls -->
-    <button id="toggle-simulator-btn" title="Toggle Manual Outcome & Bet Controls">
-      ⚙️ MANUAL CONTROLS & SIMULATOR
+    <!-- Floating Trigger Button for Rules & Bet Settings -->
+    <button id="toggle-rules-btn" title="Open Winning Rules & Bet Configurator">
+      ⚙️ WINNING RULES & BET SETTINGS
     </button>
 
-    <!-- Manual Configuration & Payout Simulator Panel -->
-    <div id="simulator-panel" class="hidden">
-      <div class="panel-header">
-        <div class="panel-title">🎯 OUTCOME SIMULATOR & MANUAL BET</div>
-        <button id="close-simulator-btn">✕</button>
+    <!-- Custom Rules & Bet Configurator Modal -->
+    <div id="rules-modal" class="hidden">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <div class="modal-title">⚙️ WINNING RULES & BET CONFIGURATOR</div>
+          <div class="modal-subtitle">Manually customize winning conditions, payout multipliers, and bet amounts.</div>
+        </div>
+        <button id="close-rules-btn">✕</button>
       </div>
 
-      <div class="panel-body">
+      <div class="modal-content">
         <!-- Section 1: Manual Bet Amount -->
-        <div class="panel-section">
-          <label class="section-label">💰 MANUALLY SET BET AMOUNT</label>
-          <div class="bet-input-row">
-            <button class="step-btn" id="bet-minus-btn">-10</button>
-            <input type="number" id="manual-bet-input" min="1" max="10000" value="10" />
-            <button class="step-btn" id="bet-plus-btn">+10</button>
-            <button class="chip-btn" data-bet="50">50</button>
-            <button class="chip-btn" data-bet="100">100</button>
-            <button class="chip-btn" data-bet="250">250</button>
-            <button class="chip-btn" data-bet="max">MAX</button>
+        <div class="config-section">
+          <div class="section-title">💰 1. Set Bet Amount</div>
+          <div class="bet-config-row">
+            <span class="bet-label">Current Bet:</span>
+            <button class="stepper-btn" id="cfg-bet-minus">-10</button>
+            <input type="number" id="cfg-bet-input" min="1" max="10000" value="10" />
+            <button class="stepper-btn" id="cfg-bet-plus">+10</button>
+            <button class="preset-chip" data-bet="25">25</button>
+            <button class="preset-chip" data-bet="50">50</button>
+            <button class="preset-chip" data-bet="100">100</button>
+            <button class="preset-chip" data-bet="250">250</button>
+            <button class="preset-chip" data-bet="max">MAX</button>
           </div>
         </div>
 
-        <!-- Section 2: Winning Combinations & Manual Payouts -->
-        <div class="panel-section">
-          <label class="section-label">🎰 MANUALLY SET WINNING COMBINATION</label>
-          <div class="reels-select-row">
-            <div class="reel-picker">
-              <span>Reel 1</span>
-              <select id="reel1-select">
-                <option value="random">🎲 Random</option>
-                <option value="0">★ 7 (Seven)</option>
-                <option value="1">✦ BAR</option>
-                <option value="2">🔔 BELL</option>
-                <option value="3">🍒 CHERRY</option>
-              </select>
-            </div>
-            <div class="reel-picker">
-              <span>Reel 2</span>
-              <select id="reel2-select">
-                <option value="random">🎲 Random</option>
-                <option value="0">★ 7 (Seven)</option>
-                <option value="1">✦ BAR</option>
-                <option value="2">🔔 BELL</option>
-                <option value="3">🍒 CHERRY</option>
-              </select>
-            </div>
-            <div class="reel-picker">
-              <span>Reel 3</span>
-              <select id="reel3-select">
-                <option value="random">🎲 Random</option>
-                <option value="0">★ 7 (Seven)</option>
-                <option value="1">✦ BAR</option>
-                <option value="2">🔔 BELL</option>
-                <option value="3">🍒 CHERRY</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Quick Combination Presets -->
-          <div class="presets-label">QUICK WIN PRESETS:</div>
-          <div class="presets-row">
-            <button class="preset-btn" data-r1="0" data-r2="0" data-r3="0">★ 7-7-7 (100x Jackpot)</button>
-            <button class="preset-btn" data-r1="1" data-r2="1" data-r3="1">✦ BAR-BAR-BAR (50x Mega)</button>
-            <button class="preset-btn" data-r1="2" data-r2="2" data-r3="2">🔔 BELLs (25x + 5 Free Spins)</button>
-            <button class="preset-btn" data-r1="3" data-r2="3" data-r3="3">🍒 3x Cherries (10x)</button>
-            <button class="preset-btn" data-r1="3" data-r2="3" data-r3="0">🍒 2x Cherries (2x)</button>
-            <button class="preset-btn" data-r1="0" data-r2="0" data-r3="3">⚡ Lucky Respin (7-7-Cherry)</button>
-            <button class="preset-btn reset-btn" data-r1="random" data-r2="random" data-r3="random">🎲 Reset to Random</button>
+        <!-- Section 2: Rule Templates -->
+        <div class="config-section">
+          <div class="section-title">🎯 2. Quick Rule Presets</div>
+          <div class="templates-row">
+            <button class="template-btn primary-template" id="tpl-assignment">
+              ⭐ Strict Rule: All Slots Same Symbol (3-Matching Only)
+            </button>
+            <button class="template-btn" id="tpl-arcade">
+              🎰 Classic Arcade + Bonus (3-Match + 2-Cherries + Respin)
+            </button>
+            <button class="template-btn" id="tpl-highroller">
+              🔥 High Roller Mania (250x, 100x, 50x)
+            </button>
           </div>
         </div>
 
-        <!-- Section 3: Live Payout Simulation Preview -->
-        <div class="simulation-preview-card">
-          <div class="preview-row">
-            <span class="preview-title">Target Combination:</span>
-            <span id="preview-combo" class="preview-value">Random (RNG)</span>
-          </div>
-          <div class="preview-row">
-            <span class="preview-title">Win Condition:</span>
-            <span id="preview-condition" class="preview-value">Standard Play</span>
-          </div>
-          <div class="preview-row">
-            <span class="preview-title">Simulated Payout:</span>
-            <span id="preview-payout" class="preview-value highlight">+0 Coins</span>
-          </div>
+        <!-- Section 3: Active Winning Rules Table -->
+        <div class="config-section">
+          <div class="section-title">⚖️ 3. Active Winning Combinations & Multipliers</div>
+          <table class="rules-table">
+            <thead>
+              <tr>
+                <th style="width: 38px;">Active</th>
+                <th>Combination</th>
+                <th>Condition</th>
+                <th style="width: 80px;">Multiplier</th>
+                <th>Bonus</th>
+                <th style="width: 30px;"></th>
+              </tr>
+            </thead>
+            <tbody id="rules-table-body">
+              <!-- Dynamically populated from Rule Engine -->
+            </tbody>
+          </table>
         </div>
 
-        <!-- Action Button -->
-        <button id="execute-simulation-btn">🎯 SIMULATE & SPIN TO THIS OUTCOME</button>
+        <!-- Section 4: Add Custom Winning Rule -->
+        <div class="config-section">
+          <div class="section-title">➕ 4. Add Custom Winning Rule</div>
+          <div class="add-rule-row">
+            <select id="new-rule-condition">
+              <option value="ALL_MATCH_SPECIFIC">All 3 Slots Match Symbol</option>
+              <option value="COUNT_SPECIFIC">At Least 2 of Symbol</option>
+              <option value="ALL_MATCH_ANY">All 3 Slots Match Any Symbol</option>
+            </select>
+            <select id="new-rule-symbol">
+              <option value="0">★ 7 (Seven)</option>
+              <option value="1">✦ BAR</option>
+              <option value="2">🔔 BELL</option>
+              <option value="3">🍒 CHERRY</option>
+            </select>
+            <input type="number" id="new-rule-multiplier" placeholder="Multiplier" value="15" min="1" max="1000" />
+            <select id="new-rule-bonus">
+              <option value="NONE">No Bonus</option>
+              <option value="FREE_SPINS">+5 Free Spins (2x)</option>
+              <option value="RESPIN">Lucky Respin</option>
+            </select>
+            <button id="add-rule-btn">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="reset-rules-btn" id="reset-rules-btn">↺ Reset to Defaults</button>
+        <span id="save-toast">✓ Rules Applied Live!</span>
+        <button class="save-rules-btn" id="save-rules-btn">💾 Save & Apply Rules</button>
       </div>
     </div>
 

@@ -37,27 +37,37 @@ Then visit `http://localhost:8080`.
 
 ## 🌟 Game Features
 
-### 1. Winning Logic & Payout Table (With Manual Simulation)
-Wins are evaluated on the center payline across all 3 reels with the following multipliers:
+### 1. Manual Winning Rules Engine & Bet Configurator
+Unlike games with rigid, hardcoded payout logic, this Slot Machine features a **fully customizable Dynamic Rule Engine & Manual Bet Configurator**:
 
-| Symbol | Combination | Multiplier | Bonus Reward | Tier |
+- ⚙️ **Open Configurator**: Click the floating **`⚙️ WINNING RULES & BET SETTINGS`** button at the top left, or click the **TOTAL BET** number on the console bar.
+- 💰 **Manual Bet Input**: Directly enter any bet amount in the numeric input field (e.g. `25`, `77`, `250`), use `-10`/`+10` stepper buttons, or click chip presets (`25`, `50`, `100`, `250`, `MAX`).
+- ⭐ **Strict Assignment Rule (Default)**: Conforms strictly to the assignment requirement: **"Player wins when all slots have the same symbol"**. Secondary rules such as 2-cherries or respin are **disabled by default**, so only 3 matching symbols win!
+- ⚖️ **Toggle Any Combination**: Enable or disable any winning condition with a single click. Want only 7-7-7 to pay out? Simply uncheck the other symbols.
+- 🔢 **Custom Multipliers**: Edit the payout multiplier directly in the table for each combination (e.g., customize 7-7-7 from 100x to 500x, or BAR from 50x to 150x).
+- ➕ **Add Custom Rules**: Define new winning combinations dynamically by specifying:
+  - Condition: *All 3 Slots Match*, *At Least 2 Match*, or *All 3 Match Any Symbol*.
+  - Target Symbol: Seven, BAR, Bell, or Cherry.
+  - Multiplier: Any custom integer multiplier.
+  - Bonus Feature: None, +5 Free Spins (2x multiplier), or Lucky Respin.
+- 🎯 **Quick Rule Presets**:
+  - **⭐ Strict Assignment**: Only 3 matching symbols win (7-7-7, BAR-BAR-BAR, BELL-BELL-BELL, CHERRY-CHERRY-CHERRY). 2-cherries and respin disabled.
+  - **🎰 Classic Arcade + Bonus**: 3-of-a-kind + 2 Cherries (2x) + Lucky Respin enabled.
+  - **🔥 High Roller Mania**: 250x, 100x, 50x, 20x multipliers for high stakes play.
+- 💾 **Live Application & Storage**: Rules are saved to browser storage and update the in-game paytable modal immediately.
+
+---
+
+### 2. Default Winning Combinations & Payout Table
+
+| Symbol | Combination | Multiplier | Bonus Reward | Status (Assignment Default) |
 | :---: | :---: | :---: | :---: | :---: |
-| **7** | 3x Seven | **100x Bet** | ★ Grand Jackpot Celebration ★ | Top Tier |
-| **BAR** | 3x Bar | **50x Bet** | ✦ Mega Win Celebration ✦ | High Tier |
-| **BELL** | 3x Bell | **25x Bet** | 🔔 +5 Free Spins (2x Multiplier) 🔔 | Mid Tier / Bonus |
-| **CHERRY** | 3x Cherry | **10x Bet** | 🍒 Sweet Win 🍒 | Frequent |
-| **CHERRY** | Any 2 Cherries | **2x Bet** | 🍒 Minor Win 🍒 | Frequent |
-
-#### 🎯 Manual Outcome & Payout Simulator:
-- Click the **`⚙️ MANUAL CONTROLS & SIMULATOR`** button in the top left corner.
-- **Manually pick each reel's symbol** (`Reel 1`, `Reel 2`, `Reel 3`) or choose one of the quick presets (`7-7-7 Jackpot`, `BAR-BAR-BAR`, `BELLs`, `3x Cherry`, `2x Cherry`, `Lucky Respin`).
-- The live simulator card computes and previews the exact win condition and simulated payout before spinning!
-- Click **`🎯 SIMULATE & SPIN TO THIS OUTCOME`** to execute the spin and watch the reels stop on that combination and award the payout!
-
-#### 💰 Manual Bet Setting:
-- Type any custom bet amount directly into the **Bet Input field** (e.g., 25, 75, 200, 500).
-- Use quick stepper buttons (`-10`, `+10`) or quick chips (`50`, `100`, `250`, `MAX`).
-- You can also click the `<` and `>` arrow buttons or click the Bet number on the game console to adjust.
+| **7** | 3x Seven | **100x Bet** | ★ Grand Jackpot Celebration ★ | ✅ Enabled |
+| **BAR** | 3x Bar | **50x Bet** | ✦ Mega Win Celebration ✦ | ✅ Enabled |
+| **BELL** | 3x Bell | **25x Bet** | 🔔 +5 Free Spins (2x Multiplier) 🔔 | ✅ Enabled |
+| **CHERRY** | 3x Cherry | **10x Bet** | 🍒 Sweet Win 🍒 | ✅ Enabled |
+| **CHERRY** | Any 2 Cherries | **2x Bet** | 🍒 Minor Win 🍒 | ⏸️ Disabled (Manual Toggle) |
+| **ANY** | Matching Pair | **Respin** | ⚡ Lucky Respin (Hold & Spin) ⚡ | ⏸️ Disabled (Manual Toggle) |
 
 ### 2. Smooth Spring-Damped Reel Animations
 - **Phase 1: Acceleration** — Reels accelerate rapidly from resting position.
