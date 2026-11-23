@@ -14,16 +14,16 @@
   const MACHINE_WIDTH = 816;
   const MACHINE_HEIGHT = 624;
   const MACHINE_X = Math.round((CANVAS_WIDTH - MACHINE_WIDTH) / 2); // 232
-  const MACHINE_Y = 24;
+  const MACHINE_Y = 8;
 
   const REEL_DEFS = [
-    { x: MACHINE_X + 229, y: MACHINE_Y + 246, w: 108, h: 210 }, // Reel 1: 461, 270
-    { x: MACHINE_X + 359, y: MACHINE_Y + 246, w: 108, h: 210 }, // Reel 2: 591, 270
-    { x: MACHINE_X + 489, y: MACHINE_Y + 246, w: 108, h: 210 }  // Reel 3: 721, 270
+    { x: MACHINE_X + 229, y: MACHINE_Y + 246, w: 108, h: 210 },
+    { x: MACHINE_X + 359, y: MACHINE_Y + 246, w: 108, h: 210 },
+    { x: MACHINE_X + 489, y: MACHINE_Y + 246, w: 108, h: 210 }
   ];
 
-  const SYMBOL_SIZE = 96;
-  const SYMBOL_SPACING = 96;
+  const SYMBOL_SIZE = 86;
+  const SYMBOL_SPACING = 98;
   const PAYLINE_OFFSET_Y = 105; // Center of reel window
 
   const SYMBOL_TYPES = {
@@ -170,11 +170,12 @@
       osc.stop(now + 0.06);
     } else if (type === 'reelStop') {
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(140, now);
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+      osc.frequency.setValueAtTime(145, now);
+      osc.frequency.exponentialRampToValueAtTime(48, now + 0.13);
+      gain.gain.setValueAtTime(0.45, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.13);
       osc.start(now);
-      osc.stop(now + 0.12);
+      osc.stop(now + 0.13);
     } else if (type === 'winSmall') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(523.25, now);
@@ -184,6 +185,38 @@
       gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
       osc.start(now);
       osc.stop(now + 0.4);
+    } else if (type === 'leverRatchet') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.025);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.linearRampToValueAtTime(0.005, now + 0.025);
+      osc.start(now);
+      osc.stop(now + 0.025);
+    } else if (type === 'leverLatch') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(130, now);
+      osc.frequency.exponentialRampToValueAtTime(42, now + 0.08);
+      gain.gain.setValueAtTime(0.38, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (type === 'leverSpring') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(75, now + 0.06);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.linearRampToValueAtTime(0.005, now + 0.06);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    } else if (type === 'reelTick') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(380, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.016);
+      gain.gain.setValueAtTime(0.055, now);
+      gain.gain.linearRampToValueAtTime(0.003, now + 0.016);
+      osc.start(now);
+      osc.stop(now + 0.016);
     }
   }
 
@@ -255,7 +288,7 @@
     }
   }
 
-  // --- Reel Object ---
+  // --- Reel Object (Continuous Physical Drum Tape Engine) ---
   class Reel {
     constructor(index, def) {
       this.index = index;
@@ -264,22 +297,52 @@
       this.w = def.w;
       this.h = def.h;
 
-      // 3 Visible symbols on strip
-      this.symbols = [SYMBOL_TYPES.SEVEN, SYMBOL_TYPES.BAR, SYMBOL_TYPES.BELL];
-      this.targetSymbol = SYMBOL_TYPES.BAR;
+      // Continuous position in symbol steps (1.0 step = SYMBOL_SPACING px downward)
+      this.position = 0;
+      this.startPos = 0;
+      this.stopStartPos = 0;
+      this.targetStep = 0;
+      this.lastTickStep = 0;
+
+      // Persistent virtual reel strip map so symbols scroll smoothly without jumps
+      this.stripMap = new Map();
+      this.targetSymbol = SYMBOL_TYPES.SEVEN;
+      this.stripMap.set(0, SYMBOL_TYPES.SEVEN);
+      this.stripMap.set(1, SYMBOL_TYPES.BELL);
+      this.stripMap.set(-1, SYMBOL_TYPES.BAR);
+      this.stripMap.set(2, SYMBOL_TYPES.CHERRY);
+      this.stripMap.set(-2, SYMBOL_TYPES.CHERRY);
 
       // Physics state
       this.isSpinning = false;
-      this.scrollOffset = 0;
-      this.speed = 0;
-      this.maxSpeed = 2400; // px/sec
+      this.speed = 0; // symbols per second
+      this.maxSpeed = 24.5 + index * 1.1; // subtle per-reel inertia variance
       this.spinTimer = 0;
-      this.stopDuration = 0.5;
+      this.stopDuration = 0.54;
+      this.stopProgress = 0;
       this.stopping = false;
-      this.bounceTimer = 0;
+      this.latchSoundPlayed = false;
       this.isLocked = false; // For Lucky Respin
       this.pulseWin = false;
       this.pulsePhase = 0;
+    }
+
+    getSymbolAtStep(step) {
+      if (this.stripMap.has(step)) {
+        return this.stripMap.get(step);
+      }
+      // Generate realistic non-repeating neighbor on the reel strip
+      const prev = this.stripMap.get(step - 1);
+      const next = this.stripMap.get(step + 1);
+      let sym = Math.abs((step * 7 + this.index * 3 + 1) % 4);
+      if (sym === prev || sym === next) {
+        sym = (sym + 1) % 4;
+        if (sym === prev || sym === next) {
+          sym = (sym + 1) % 4;
+        }
+      }
+      this.stripMap.set(step, sym);
+      return sym;
     }
 
     startSpin(target) {
@@ -287,21 +350,48 @@
       this.targetSymbol = target;
       this.isSpinning = true;
       this.stopping = false;
+      this.latchSoundPlayed = false;
       this.speed = 0;
       this.spinTimer = 0;
-      this.bounceTimer = 0;
+      this.stopProgress = 0;
+      this.startPos = Math.round(this.position);
+      this.position = this.startPos;
+      this.lastTickStep = this.startPos;
       this.pulseWin = false;
+
+      // Prune old strip history to keep memory bounded
+      const curSym = this.getSymbolAtStep(this.startPos);
+      const topSym = this.getSymbolAtStep(this.startPos + 1);
+      const botSym = this.getSymbolAtStep(this.startPos - 1);
+      this.stripMap.clear();
+      this.stripMap.set(this.startPos, curSym);
+      this.stripMap.set(this.startPos + 1, topSym);
+      this.stripMap.set(this.startPos - 1, botSym);
     }
 
     requestStop(target) {
+      if (!this.isSpinning || this.stopping) return;
       this.targetSymbol = target;
       this.stopping = true;
       this.stopProgress = 0;
+      this.latchSoundPlayed = false;
+      this.stopStartPos = this.position;
+
+      // Pick landing step 6 symbols ahead for smooth deceleration runway
+      this.targetStep = Math.ceil(this.position) + 6;
+      this.stripMap.set(this.targetStep, target);
+      // Ensure top and bottom visible neighbor symbols around target are distinct
+      const aboveSym = (target + 2) % 4;
+      const belowSym = (target + 1) % 4;
+      this.stripMap.set(this.targetStep + 1, aboveSym);
+      this.stripMap.set(this.targetStep - 1, belowSym);
+      this.stripMap.set(this.targetStep + 2, (target + 3) % 4);
+      this.stripMap.set(this.targetStep - 2, (target + 3) % 4);
     }
 
     update(dt) {
       if (this.pulseWin) {
-        this.pulsePhase += dt * 5;
+        this.pulsePhase += dt * 5.5;
       }
 
       if (!this.isSpinning) return;
@@ -309,88 +399,131 @@
       this.spinTimer += dt;
 
       if (!this.stopping) {
-        // Acceleration phase
-        this.speed = Math.min(this.maxSpeed, this.speed + dt * 6000);
-        this.scrollOffset = (this.scrollOffset + this.speed * dt) % SYMBOL_SPACING;
-      } else {
-        // Deceleration & Spring Bounce phase
-        this.stopProgress += dt / this.stopDuration;
-        if (this.stopProgress < 1.0) {
-          // Cubic ease-out
-          const t = this.stopProgress;
-          const ease = 1 - Math.pow(1 - t, 3);
-          this.speed = this.maxSpeed * (1 - ease);
-          this.scrollOffset = (this.scrollOffset + this.speed * dt) % SYMBOL_SPACING;
+        const windupDur = 0.075;
+        if (this.spinTimer < windupDur) {
+          // Stepper motor upward anticipation kickback before launching downward
+          const w = this.spinTimer / windupDur;
+          this.position = this.startPos - 0.13 * Math.sin(w * Math.PI);
+          this.speed = 2.0;
         } else {
-          // Bounce animation
-          this.bounceTimer += dt;
-          const bDur = 0.22;
-          if (this.bounceTimer < bDur) {
-            const bt = this.bounceTimer / bDur;
-            // Damped harmonic bounce
-            this.scrollOffset = -18 * Math.cos(bt * Math.PI * 0.5);
-          } else {
-            // Settle exactly on target
-            this.scrollOffset = 0;
-            this.isSpinning = false;
-            this.stopping = false;
-            this.symbols[1] = this.targetSymbol;
-            this.symbols[0] = (this.targetSymbol + 1) % 4;
-            this.symbols[2] = (this.targetSymbol + 3) % 4;
-            playSound('reelStop', 0.85);
-            onReelStopped(this.index);
+          // Smooth downward acceleration
+          this.speed = Math.min(this.maxSpeed, this.speed + dt * 68);
+          this.position += this.speed * dt;
+          const curStep = Math.floor(this.position);
+          if (curStep > this.lastTickStep) {
+            this.lastTickStep = curStep;
+            if (this.index === 0 || Math.random() < 0.45) {
+              playProceduralTone('reelTick');
+            }
           }
+        }
+      } else {
+        // Continuous deceleration + physical overshoot + spring-back settle
+        this.stopProgress += dt / this.stopDuration;
+        const distance = this.targetStep - this.stopStartPos;
+        const overshoot = 0.21; // +20.5px physical downward overshoot past payline
+        const splitT = 0.76;
+
+        if (this.stopProgress < splitT) {
+          // Decelerate smoothly into the bottom of the overshoot catch
+          const u = this.stopProgress / splitT;
+          const easeOut = 1 - Math.pow(1 - u, 2.5);
+          const prevPos = this.position;
+          this.position = this.stopStartPos + (distance + overshoot) * easeOut;
+          this.speed = Math.max(0, (this.position - prevPos) / Math.max(0.001, dt));
+
+          const curStep = Math.floor(this.position);
+          if (curStep > this.lastTickStep && curStep < this.targetStep) {
+            this.lastTickStep = curStep;
+            playProceduralTone('reelTick');
+          }
+        } else if (this.stopProgress < 1.0) {
+          // Trigger heavy mechanical latch click & cabinet micro-thud at bottom of overshoot
+          if (!this.latchSoundPlayed) {
+            this.latchSoundPlayed = true;
+            playSound('reelStop', 0.9);
+            triggerCabinetJolt(2.2);
+          }
+          // Damped harmonic spring-back from +overshoot into exact 0.0 payline alignment
+          const v = (this.stopProgress - splitT) / (1.0 - splitT);
+          const rebound = overshoot * Math.cos(v * Math.PI * 0.5) * (1 - 0.25 * v);
+          this.position = this.targetStep + rebound;
+          this.speed = 0;
+        } else {
+          if (!this.latchSoundPlayed) {
+            this.latchSoundPlayed = true;
+            playSound('reelStop', 0.9);
+            triggerCabinetJolt(2.2);
+          }
+          // Locked dead-center on target symbol
+          this.position = this.targetStep;
+          this.speed = 0;
+          this.isSpinning = false;
+          this.stopping = false;
+          onReelStopped(this.index);
         }
       }
     }
 
     draw(ctx) {
       ctx.save();
-      // Clip to reel window
+      // Clip to reel window cutout
       ctx.beginPath();
       ctx.rect(this.x, this.y, this.w, this.h);
       ctx.clip();
 
-      // Draw shaded backdrop
+      // 1. Draw shaded reel drum backdrop
       if (images.reelsBg) {
         ctx.drawImage(images.reelsBg, MACHINE_X, MACHINE_Y, MACHINE_WIDTH, MACHINE_HEIGHT);
       }
 
       const centerY = this.y + PAYLINE_OFFSET_Y;
-      const pulseScale = this.pulseWin ? 1.0 + 0.15 * Math.sin(this.pulsePhase) : 1.0;
+      const pulseScale = this.pulseWin ? 1.0 + 0.13 * Math.sin(this.pulsePhase) : 1.0;
 
-      // Draw symbols
-      const yShift = this.scrollOffset;
-      const count = 5; // buffer symbols
-      for (let i = -2; i <= 2; i++) {
-        const symY = centerY + i * SYMBOL_SPACING + yShift;
-        let symType;
+      // 2. Subtle winning payline golden backlight glow behind winning symbol
+      if (this.pulseWin) {
+        const glowGrad = ctx.createRadialGradient(
+          this.x + this.w / 2, centerY, 6,
+          this.x + this.w / 2, centerY, 58
+        );
+        glowGrad.addColorStop(0, 'rgba(251, 191, 36, 0.42)');
+        glowGrad.addColorStop(1, 'rgba(251, 191, 36, 0.0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(this.x, centerY - 58, this.w, 116);
+      }
 
-        if (this.isSpinning && this.speed > 800) {
-          // High speed random blur symbol
-          symType = (Math.abs(Math.floor((symY + this.spinTimer * 1000) / SYMBOL_SPACING))) % 4;
-        } else if (i === 0) {
-          symType = this.stopping ? this.targetSymbol : this.symbols[1];
-        } else if (i === -1) {
-          symType = (this.symbols[1] + 1) % 4;
-        } else if (i === 1) {
-          symType = (this.symbols[1] + 3) % 4;
-        } else {
-          symType = (this.symbols[1] + 2) % 4;
+      // 3. Draw symbols along the continuous curved drum strip
+      const baseStep = Math.round(this.position);
+      for (let offset = -2; offset <= 2; offset++) {
+        const step = baseStep + offset;
+        const deltaSteps = this.position - step; // + moves downward
+        const symY = centerY + deltaSteps * SYMBOL_SPACING;
+
+        if (symY < this.y - SYMBOL_SIZE || symY > this.y + this.h + SYMBOL_SIZE) {
+          continue;
         }
 
+        // Subtle 3D cylindrical foreshortening near top/bottom curve of the drum
+        const distFromCenter = Math.abs(symY - centerY) / (this.h * 0.55);
+        const cylSquashY = Math.max(0.82, 1.0 - 0.12 * distFromCenter * distFromCenter);
+
+        const symType = this.getSymbolAtStep(step);
         const img = images[`sym${symType}`];
         if (img) {
-          const drawScale = (i === 0 && this.pulseWin) ? pulseScale : 1.0;
+          const isCenterSymbol = (step === baseStep && !this.isSpinning);
+          const drawScale = (isCenterSymbol && this.pulseWin) ? pulseScale : 1.0;
           const drawW = SYMBOL_SIZE * drawScale;
-          const drawH = SYMBOL_SIZE * drawScale;
+          const drawH = SYMBOL_SIZE * drawScale * cylSquashY;
           const drawX = this.x + (this.w - drawW) / 2;
           const drawY = symY - drawH / 2;
 
-          if (this.isSpinning && this.speed > 1200) {
-            // Speed motion blur effect
-            ctx.globalAlpha = 0.7;
-            ctx.drawImage(img, drawX, drawY - 8, drawW, drawH + 16);
+          if (this.isSpinning && this.speed > 14) {
+            // Realistic vertical motion blur trail proportional to drum velocity
+            const blurStretch = Math.min(20, (this.speed - 14) * 1.6);
+            ctx.globalAlpha = 0.32;
+            ctx.drawImage(img, drawX, drawY - blurStretch, drawW, drawH + blurStretch * 2);
+            ctx.globalAlpha = 0.88;
+            ctx.drawImage(img, drawX, drawY - blurStretch * 0.35, drawW, drawH + blurStretch * 0.7);
             ctx.globalAlpha = 1.0;
           } else {
             ctx.drawImage(img, drawX, drawY, drawW, drawH);
@@ -398,7 +531,23 @@
         }
       }
 
-      // If reel is locked (Lucky Respin highlight)
+      // 4. 3D Cylindrical Drum Top/Bottom Curvature Shadow & Specular Glass Sheen
+      const drumGrad = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
+      drumGrad.addColorStop(0.0, 'rgba(6, 8, 22, 0.58)');
+      drumGrad.addColorStop(0.16, 'rgba(6, 8, 22, 0.12)');
+      drumGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.04)');
+      drumGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.04)');
+      drumGrad.addColorStop(0.84, 'rgba(6, 8, 22, 0.12)');
+      drumGrad.addColorStop(1.0, 'rgba(6, 8, 22, 0.58)');
+      ctx.fillStyle = drumGrad;
+      ctx.fillRect(this.x, this.y, this.w, this.h);
+
+      // Inner vertical side bezel shadow inside reel cutout
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.24)';
+      ctx.fillRect(this.x, this.y, 3, this.h);
+      ctx.fillRect(this.x + this.w - 3, this.y, 3, this.h);
+
+      // 5. If reel is locked (Lucky Respin highlight)
       if (this.isLocked) {
         ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 4;
@@ -628,8 +777,25 @@
     isSpinning: false,
     autoSpin: false,
     freeSpins: 0,
-    leverState: 'up', // 'up' or 'down'
-    leverPullTimer: 0,
+    // Continuous Mechanical Lever Physics State
+    leverState: 'up',
+    leverPos: 0, // 0.0 = rest up, 1.0 = full bottom pull, -0.08 = rebound overshoot
+    leverVel: 0,
+    leverPhase: 'idle', // 'idle' | 'dragging' | 'auto_pull' | 'bottom_hold' | 'spring_return'
+    leverHoldTimer: 0,
+    leverDragStartY: 0,
+    leverMaxDragged: 0,
+    leverLastRatchet: 0,
+    leverPendingSpin: false,
+    // Physical Cabinet Jolt & Lighting State
+    cabinetJoltY: 0,
+    cabinetJoltVel: 0,
+    marqueePhase: 0,
+    pressedButtonId: null,
+    // Timers & Modal State
+    spinTimeouts: [],
+    celebrationRafId: null,
+    celebrationTimeoutId: null,
     showPaytable: false,
     showCelebration: false,
     celebrationText: '',
@@ -640,6 +806,33 @@
     currentOutcome: [0, 0, 0],
     respinIndex: -1
   };
+
+  function triggerCabinetJolt(impulse = 2.0) {
+    state.cabinetJoltVel += impulse * 18;
+  }
+
+  function scheduleSpinTimeout(fn, delayMs) {
+    const id = setTimeout(fn, delayMs);
+    state.spinTimeouts.push(id);
+    return id;
+  }
+
+  function clearSpinTimeouts() {
+    while (state.spinTimeouts.length > 0) {
+      clearTimeout(state.spinTimeouts.pop());
+    }
+  }
+
+  function cancelCelebrationTicker() {
+    if (state.celebrationRafId) {
+      cancelAnimationFrame(state.celebrationRafId);
+      state.celebrationRafId = null;
+    }
+    if (state.celebrationTimeoutId) {
+      clearTimeout(state.celebrationTimeoutId);
+      state.celebrationTimeoutId = null;
+    }
+  }
 
   // Initialize saved custom bet if stored
   try {
@@ -663,7 +856,8 @@
       return;
     }
     const maxLimit = Math.max(10, state.coins);
-    const amount = Math.max(1, Math.min(maxLimit, parseInt(val) || 10));
+    const parsed = parseInt(val, 10);
+    const amount = Math.max(1, Math.min(maxLimit, Number.isFinite(parsed) ? parsed : 10));
     state.customBet = amount;
     const cfgInput = document.getElementById('cfg-bet-input');
     if (cfgInput && document.activeElement !== cfgInput) {
@@ -675,18 +869,24 @@
   }
 
   function reloadFreeCoins() {
-    if (state.coins < 10) {
-      state.coins = 1000;
+    if (state.isSpinning) return;
+    if (state.coins < 10 || state.coins < getCurrentBet()) {
+      state.coins = Math.max(state.coins, 1000);
       state.statusText = '🪙 1,000 Complimentary Coins Reloaded!';
       playSound('coinPayout', 0.9);
       flashSaveToast('🪙 Bankroll reloaded to 1,000 Coins!');
     }
   }
 
+  function isBetSettingsModalOpen() {
+    const modal = document.getElementById('rules-modal');
+    return modal && !modal.classList.contains('hidden');
+  }
+
   function openBetSettingsModal() {
     const modal = document.getElementById('rules-modal');
     if (!modal) return;
-    state.showPaytable = false; // Mutually exclusive
+    state.showPaytable = false;
     modal.classList.remove('hidden');
     renderRulesTable();
     const cfgInput = document.getElementById('cfg-bet-input');
@@ -709,8 +909,9 @@
   }
 
   // --- Game Mechanics & Win Logic ---
-  function executeSpin() {
+  function executeSpin(fromLeverLatch = false) {
     if (state.isSpinning) return;
+    if (!fromLeverLatch && (state.leverPhase === 'auto_pull' || state.leverPendingSpin)) return;
 
     const isFreeSpin = state.freeSpins > 0;
     const bet = getCurrentBet();
@@ -731,6 +932,8 @@
       state.statusText = `★ FREE SPIN! (${state.freeSpins} Remaining, 2X Multiplier) ★`;
     }
 
+    clearSpinTimeouts();
+    cancelCelebrationTicker();
     state.isSpinning = true;
     stoppedCount = 0;
     isRespinActive = false;
@@ -738,8 +941,14 @@
     state.showCelebration = false;
     clearReelHighlights();
 
-    // 1. Pull lever visual
-    triggerLeverPull();
+    if (!isFreeSpin) {
+      state.statusText = 'Reels Spinning... Good Luck!';
+    }
+
+    // 1. Pull lever visual if triggered via SPIN button / Spacebar / AutoSpin
+    if (!fromLeverLatch) {
+      triggerLeverPull(false);
+    }
 
     // 2. Play spin sound loop
     startReelSpinLoop();
@@ -758,12 +967,12 @@
     });
 
     // 5. Staggered reel stop schedule
-    const minSpinTime = 1.3;
-    setTimeout(() => {
+    const minSpinTime = 1.25;
+    scheduleSpinTimeout(() => {
       if (state.reels[0]) state.reels[0].requestStop(state.currentOutcome[0]);
     }, minSpinTime * 1000);
 
-    setTimeout(() => {
+    scheduleSpinTimeout(() => {
       if (state.reels[1]) state.reels[1].requestStop(state.currentOutcome[1]);
     }, (minSpinTime + 0.45) * 1000);
 
@@ -772,12 +981,12 @@
     const reel3Delay = isSuspense ? (minSpinTime + 1.2) : (minSpinTime + 0.9);
 
     if (isSuspense) {
-      setTimeout(() => {
+      scheduleSpinTimeout(() => {
         playSound('respinSuspense', 0.9);
-      }, (minSpinTime + 0.5) * 1000);
+      }, (minSpinTime + 0.48) * 1000);
     }
 
-    setTimeout(() => {
+    scheduleSpinTimeout(() => {
       if (state.reels[2]) state.reels[2].requestStop(state.currentOutcome[2]);
     }, reel3Delay * 1000);
   }
@@ -813,8 +1022,11 @@
     const isFreeSpin = state.freeSpins > 0;
     const bonusMult = isFreeSpin ? 2.0 : 1.0;
 
-    // Filter enabled rules configured manually by the player
-    const enabledRules = state.activeRules.filter(r => r.enabled);
+    // Filter enabled rules and sort by highest payout multiplier first so higher wins always take priority
+    const enabledRules = state.activeRules
+      .filter(r => r.enabled)
+      .slice()
+      .sort((a, b) => (b.multiplier || 0) - (a.multiplier || 0));
 
     let matchedWinRule = null;
     let matchedRespinRule = null;
@@ -835,17 +1047,17 @@
           break;
         }
       }
-      // Condition C: Count of specific symbol
+      // Condition C: Count of specific symbol (e.g. at least 2 match)
       else if (rule.condition === 'COUNT_SPECIFIC') {
         const count = [r1, r2, r3].filter(s => s === rule.symbol).length;
-        if (count === rule.requiredCount) {
+        if (count >= rule.requiredCount) {
           matchedWinRule = rule;
           break;
         }
       }
       // Condition D: Matching pair triggers lucky respin
       else if (rule.condition === 'ANY_PAIR_RESPIN') {
-        if (!isFreeSpin && !wasRespin) {
+        if (!isFreeSpin && !wasRespin && !matchedRespinRule) {
           let lockA = -1, lockB = -1, respinTarget = -1;
           if (r1 === r2 && (rule.symbol === -1 || r1 === rule.symbol)) {
             lockA = 0; lockB = 1; respinTarget = 2;
@@ -884,7 +1096,11 @@
     }
 
     // 3. No matching win rule
-    state.statusText = wasRespin ? 'Respin finished! Better luck next spin.' : 'Better luck next spin! Try again.';
+    if (enabledRules.length === 0) {
+      state.statusText = 'No winning rules enabled! Open BET SETTINGS.';
+    } else {
+      state.statusText = wasRespin ? 'Respin finished! Better luck next spin.' : 'Better luck next spin! Pull Lever or SPIN.';
+    }
     concludeSpin();
   }
 
@@ -897,20 +1113,21 @@
     state.reels[lockB].isLocked = true;
     playSound('respinSuspense', 1.0);
 
-    setTimeout(() => {
+    scheduleSpinTimeout(() => {
       startReelSpinLoop();
       const newSymbol = getRandomSymbol();
       state.currentOutcome[respinTarget] = newSymbol;
       state.reels[respinTarget].startSpin(newSymbol);
 
-      setTimeout(() => {
+      scheduleSpinTimeout(() => {
         state.reels[respinTarget].requestStop(newSymbol);
-      }, 1500);
-    }, 600);
+      }, 1450);
+    }, 580);
   }
 
   function awardWin(amount, title, isJackpot) {
     stopReelSpinLoop();
+    cancelCelebrationTicker();
     state.lastWin = amount;
     state.coins += amount;
     state.totalWon += amount;
@@ -920,7 +1137,7 @@
     state.showCelebration = true;
 
     // Spawn celebration particles
-    spawnWinParticles(isJackpot ? 120 : 50);
+    spawnWinParticles(isJackpot ? 120 : 55);
 
     if (isJackpot) {
       playSound('winJackpot', 1.0);
@@ -929,30 +1146,39 @@
     }
     playSound('coinPayout', 0.8);
 
-    // Animate count-up ticker
+    // Animate count-up ticker with safe cancellation on early click
     state.displayWinnings = 0;
-    const duration = isJackpot ? 1800 : 900;
+    const duration = isJackpot ? 1700 : 850;
     const start = performance.now();
 
     function stepTicker(now) {
+      if (!state.showCelebration) {
+        state.celebrationRafId = null;
+        return;
+      }
       const elapsed = now - start;
       const progress = Math.min(1.0, elapsed / duration);
       state.displayWinnings = Math.round(amount * (1 - Math.pow(1 - progress, 2)));
 
       if (progress < 1.0) {
-        requestAnimationFrame(stepTicker);
+        state.celebrationRafId = requestAnimationFrame(stepTicker);
       } else {
         state.displayWinnings = amount;
-        setTimeout(() => {
-          state.showCelebration = false;
-          concludeSpin();
-        }, isJackpot ? 1800 : 900);
+        state.celebrationRafId = null;
+        state.celebrationTimeoutId = setTimeout(() => {
+          state.celebrationTimeoutId = null;
+          if (state.showCelebration) {
+            state.showCelebration = false;
+            concludeSpin();
+          }
+        }, isJackpot ? 1600 : 850);
       }
     }
-    requestAnimationFrame(stepTicker);
+    state.celebrationRafId = requestAnimationFrame(stepTicker);
   }
 
   function concludeSpin() {
+    cancelCelebrationTicker();
     state.isSpinning = false;
     isRespinActive = false;
     stoppedCount = 0;
@@ -961,14 +1187,14 @@
 
     if (state.autoSpin) {
       if (state.coins >= getCurrentBet() || state.freeSpins > 0) {
-        setTimeout(() => {
+        scheduleSpinTimeout(() => {
           if (state.autoSpin && !state.isSpinning) {
             executeSpin();
           }
-        }, 900);
+        }, 850);
       } else {
         stopAutoSpin();
-        state.statusText = 'Auto-Spin Stopped: Low Coins!';
+        state.statusText = 'Auto-Spin Stopped: Insufficient Coins!';
       }
     }
   }
@@ -984,10 +1210,70 @@
     });
   }
 
-  function triggerLeverPull() {
+  function triggerLeverPull(shouldTriggerSpin = false) {
     state.leverState = 'down';
-    state.leverPullTimer = 0.28;
+    state.leverPhase = 'auto_pull';
+    state.leverPendingSpin = shouldTriggerSpin;
     playSound('leverPull', 0.9);
+  }
+
+  function updateLeverAndCabinet(dt) {
+    state.marqueePhase += dt * 3.2;
+
+    // 1. Update Continuous Mechanical Lever Spring-Damper Physics
+    if (state.leverPhase === 'auto_pull') {
+      state.leverPos += dt * 7.8;
+      if (state.leverPos >= 1.0) {
+        state.leverPos = 1.0;
+        state.leverPhase = 'bottom_hold';
+        state.leverHoldTimer = 0.09;
+        state.leverState = 'down';
+        playProceduralTone('leverLatch');
+        triggerCabinetJolt(2.4);
+        if (state.leverPendingSpin) {
+          state.leverPendingSpin = false;
+          executeSpin(true);
+        }
+      }
+    } else if (state.leverPhase === 'bottom_hold') {
+      state.leverHoldTimer -= dt;
+      if (state.leverHoldTimer <= 0) {
+        state.leverPhase = 'spring_return';
+        state.leverVel = -3.4;
+      }
+    } else if (state.leverPhase === 'spring_return') {
+      const stiffness = 220;
+      const damping = 16.5;
+      const prevPos = state.leverPos;
+      const accel = -stiffness * state.leverPos - damping * state.leverVel;
+      state.leverVel += accel * dt;
+      state.leverPos += state.leverVel * dt;
+      state.leverPos = Math.max(-0.08, Math.min(1.0, state.leverPos));
+
+      if (prevPos > 0.06 && state.leverPos <= 0.06) {
+        state.leverState = 'up';
+        playProceduralTone('leverSpring');
+        triggerCabinetJolt(-1.1);
+      }
+
+      if (Math.abs(state.leverPos) < 0.004 && Math.abs(state.leverVel) < 0.04) {
+        state.leverPos = 0;
+        state.leverVel = 0;
+        state.leverState = 'up';
+        state.leverPhase = 'idle';
+      }
+    }
+
+    // 2. Update Physical Cabinet Micro-Jolt
+    if (state.cabinetJoltY !== 0 || state.cabinetJoltVel !== 0) {
+      const jAccel = -340 * state.cabinetJoltY - 24 * state.cabinetJoltVel;
+      state.cabinetJoltVel += jAccel * dt;
+      state.cabinetJoltY += state.cabinetJoltVel * dt;
+      if (Math.abs(state.cabinetJoltY) < 0.04 && Math.abs(state.cabinetJoltVel) < 0.08) {
+        state.cabinetJoltY = 0;
+        state.cabinetJoltVel = 0;
+      }
+    }
   }
 
   function stopAutoSpin() {
@@ -1008,35 +1294,35 @@
   const UI_BUTTONS = [
     {
       id: 'spin',
-      x: 1045, y: 550, w: 175, h: 65,
+      x: 1035, y: 554, w: 185, h: 66,
       label: 'SPIN',
       color: '#22c55e',
       border: '#15803d',
-      action: () => executeSpin()
+      action: () => executeSpin(false)
     },
     {
       id: 'auto',
-      x: 1045, y: 625, w: 175, h: 50,
+      x: 1035, y: 641, w: 185, h: 46,
       label: 'AUTO SPIN',
       color: '#3b82f6',
       border: '#1d4ed8',
       action: () => {
         playSound('btnClick', 0.7);
         state.autoSpin = !state.autoSpin;
-        if (state.autoSpin && !state.isSpinning) executeSpin();
+        if (state.autoSpin && !state.isSpinning) executeSpin(false);
       }
     },
     {
       id: 'balanceClick',
-      x: 55, y: 638, w: 155, h: 50,
+      x: 55, y: 638, w: 165, h: 52,
       isTransparent: true,
       action: () => {
-        if (state.coins < 10) reloadFreeCoins();
+        if (state.coins < 10 || state.coins < getCurrentBet()) reloadFreeCoins();
       }
     },
     {
       id: 'betPrev',
-      x: 375, y: 642, w: 40, h: 42,
+      x: 400, y: 643, w: 42, h: 42,
       isSprite: true,
       spriteNorm: 'btnPrevNorm',
       spriteHover: 'btnPrevHover',
@@ -1048,7 +1334,7 @@
     },
     {
       id: 'betCenterClick',
-      x: 418, y: 642, w: 68, h: 42,
+      x: 444, y: 641, w: 62, h: 46,
       isTransparent: true,
       action: () => {
         playSound('btnClick', 0.6);
@@ -1057,7 +1343,7 @@
     },
     {
       id: 'betNext',
-      x: 489, y: 642, w: 40, h: 42,
+      x: 508, y: 643, w: 42, h: 42,
       isSprite: true,
       spriteNorm: 'btnNextNorm',
       spriteHover: 'btnNextHover',
@@ -1069,8 +1355,9 @@
     },
     {
       id: 'betSettings',
-      x: 555, y: 641, w: 235, h: 46,
-      label: '⚙️ BET SETTINGS',
+      x: 595, y: 641, w: 210, h: 46,
+      label: 'BET SETTINGS',
+      icon: 'gear',
       color: '#4f46e5',
       border: '#6366f1',
       action: () => {
@@ -1080,7 +1367,7 @@
     },
     {
       id: 'sound',
-      x: 825, y: 641, w: 150, h: 46,
+      x: 830, y: 641, w: 160, h: 46,
       label: 'SOUND: ON',
       color: '#334155',
       border: '#475569',
@@ -1091,30 +1378,74 @@
     },
     {
       id: 'lever',
-      x: MACHINE_X + 685, y: MACHINE_Y + 280, w: 110, h: 320,
+      x: MACHINE_X + 668, y: MACHINE_Y + 280, w: 108, h: 315,
       isTransparent: true,
       action: () => {
-        if (!state.isSpinning) executeSpin();
+        if (!state.isSpinning && state.leverPhase === 'idle') {
+          triggerLeverPull(true);
+        }
       }
     }
   ];
 
   let hoveredButtonId = null;
 
+  function getCanvasCoords(clientX, clientY) {
+    const canvas = document.getElementById('game-canvas');
+    if (!canvas) return { mx: 0, my: 0, canvas: null };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = CANVAS_WIDTH / Math.max(1, rect.width);
+    const scaleY = CANVAS_HEIGHT / Math.max(1, rect.height);
+    return {
+      mx: (clientX - rect.left) * scaleX,
+      my: (clientY - rect.top) * scaleY,
+      canvas
+    };
+  }
+
   function handlePointer(clientX, clientY, isDown = false) {
     if (isOnboardingActive) return;
-    const canvas = document.getElementById('game-canvas');
+    const { mx, my, canvas } = getCanvasCoords(clientX, clientY);
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = CANVAS_WIDTH / rect.width;
-    const scaleY = CANVAS_HEIGHT / rect.height;
 
-    const mx = (clientX - rect.left) * scaleX;
-    const my = (clientY - rect.top) * scaleY;
+    // If Bet Settings HTML modal is open, clicking on the background canvas closes it cleanly
+    if (isBetSettingsModalOpen()) {
+      if (isDown) {
+        closeBetSettingsModal();
+      }
+      return;
+    }
 
-    // Check modal close if open
+    // Active lever drag-to-pull tracking
+    if (state.leverPhase === 'dragging') {
+      const deltaY = my - state.leverDragStartY;
+      const pull = Math.max(0, Math.min(1.0, deltaY / 205));
+      state.leverPos = pull;
+      state.leverMaxDragged = Math.max(state.leverMaxDragged, pull);
+      canvas.style.cursor = 'grabbing';
+
+      // Mechanical ratchet clicks at 25%, 50%, 75% pull
+      const ratchetStep = Math.floor(pull * 4);
+      if (ratchetStep !== state.leverLastRatchet) {
+        state.leverLastRatchet = ratchetStep;
+        playProceduralTone('leverRatchet');
+      }
+
+      if (pull < 0.50) {
+        state.statusText = `Pull Lever Down to Spin... (${Math.round(pull * 100)}%)`;
+      } else {
+        state.statusText = '★ Release Lever to Spin! ★';
+      }
+
+      // Auto-engage if pulled all the way to the bottom stop
+      if (pull >= 0.96) {
+        completeLeverDrag(true);
+      }
+      return;
+    }
+
+    // Check modal close if Paytable modal open
     if (state.showPaytable) {
-      // Close button at top right of modal
       const modalX = 240, modalY = 80, modalW = 800, modalH = 540;
       const closeX = modalX + modalW - 65, closeY = modalY + 20, closeS = 46;
 
@@ -1127,7 +1458,6 @@
         return;
       }
 
-      // Check Yes/No buttons inside paytable modal
       if (mx >= modalX + 240 && mx <= modalX + 380 && my >= modalY + 450 && my <= modalY + 500) {
         if (isDown) {
           playSound('btnClick', 0.7);
@@ -1160,11 +1490,53 @@
     }
 
     hoveredButtonId = found ? found.id : null;
-    canvas.style.cursor = found ? 'pointer' : 'default';
+    if (found && found.id === 'lever') {
+      canvas.style.cursor = state.isSpinning ? 'default' : 'grab';
+    } else {
+      canvas.style.cursor = found ? 'pointer' : 'default';
+    }
 
     if (isDown && found) {
       getAudioContext(); // Unlock audio
-      found.action();
+      if (found.id === 'lever') {
+        if (!state.isSpinning && state.leverPhase === 'idle') {
+          state.leverPhase = 'dragging';
+          state.leverDragStartY = my;
+          state.leverMaxDragged = 0;
+          state.leverLastRatchet = 0;
+          canvas.style.cursor = 'grabbing';
+          playProceduralTone('leverRatchet');
+        }
+      } else {
+        state.pressedButtonId = found.id;
+        found.action();
+      }
+    }
+  }
+
+  function completeLeverDrag(forceSpin = false) {
+    state.pressedButtonId = null;
+    if (state.leverPhase !== 'dragging') return;
+    const canvas = document.getElementById('game-canvas');
+    if (canvas) canvas.style.cursor = 'default';
+
+    // Quick click (< 10% drag) OR pulled past 50% engagement threshold triggers spin!
+    if (forceSpin || state.leverMaxDragged < 0.10 || state.leverPos >= 0.50) {
+      if (state.coins < getCurrentBet() && state.freeSpins <= 0) {
+        // Spring back if insufficient coins, and display message via executeSpin
+        state.leverPhase = 'spring_return';
+        state.leverVel = -2.5;
+        executeSpin(true);
+        return;
+      }
+      playSound('leverPull', 0.9);
+      state.leverPendingSpin = true;
+      state.leverPhase = 'auto_pull';
+    } else {
+      // Released before 50% engagement point: spring back without spinning!
+      state.leverPhase = 'spring_return';
+      state.leverVel = -2.2;
+      state.statusText = 'Pull Lever All the Way Down or Press SPIN!';
     }
   }
 
@@ -1180,23 +1552,36 @@
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     }
 
-    // 2. Draw 3 Reels (Backdrop + Symbols)
+    // Apply physical cabinet micro-jolt offset during reel stops & lever latch
+    ctx.save();
+    if (state.cabinetJoltY !== 0) {
+      ctx.translate(0, state.cabinetJoltY);
+    }
+
+    // 2. Draw 3 Reels (Backdrop + Continuous Drum Symbols + 3D Cylindrical Shading)
     state.reels.forEach(r => r.draw(ctx));
 
-    // 3. Draw Machine Chassis Front (Casing with Cutouts)
+    // 2b. Subtle Center Payline Etched Glass Guide Line across the 3 reels
+    renderPaylineGlassGuide(ctx);
+
+    // 3. Draw Machine Chassis Front (Casing with Cutouts + Seamless Top Cap Extension)
     if (images.casing) {
+      if (MACHINE_Y > 0) {
+        // Extend top 2px of cabinet header stripes to y=0 so there is no floating gap at top
+        ctx.drawImage(images.casing, 0, 0, MACHINE_WIDTH, 2, MACHINE_X, 0, MACHINE_WIDTH, MACHINE_Y + 2);
+      }
       ctx.drawImage(images.casing, MACHINE_X, MACHINE_Y, MACHINE_WIDTH, MACHINE_HEIGHT);
     }
 
-    // 4. Draw Interactive Mechanical Lever
-    const leverImg = state.leverState === 'down' ? images.leverDown : images.leverUp;
-    if (leverImg) {
-      ctx.drawImage(leverImg, MACHINE_X, MACHINE_Y, MACHINE_WIDTH, MACHINE_HEIGHT);
-    }
+    // 3b. Subtle Warm Casino Marquee Glow around JACKPOT Arch
+    renderMarqueeGlow(ctx);
 
-    // 5. Middle Message / Status Box
+    // 4. Draw Realistic Continuous 3D Mechanical Lever
+    renderMechanicalLever(ctx);
+
+    // 5. Middle Message / Status Box (Centered at cabinet center x = MACHINE_X + 412)
     const mbW = 480, mbH = 88;
-    const mbX = MACHINE_X + 170, mbY = MACHINE_Y + 478;
+    const mbX = MACHINE_X + 172, mbY = MACHINE_Y + 478;
     if (images.middleBox) {
       ctx.drawImage(images.middleBox, mbX, mbY, mbW, mbH);
     } else {
@@ -1204,15 +1589,22 @@
       ctx.fillRect(mbX, mbY, mbW, mbH);
     }
 
-    // Status Text inside Middle Box
+    // Status Text inside Middle Box (with dynamic auto-fit so long messages never overflow)
     ctx.save();
     ctx.fillStyle = state.freeSpins > 0 ? '#38bdf8' : (state.lastWin > 0 ? '#fbbf24' : '#f8fafc');
-    ctx.font = 'bold 18px "Segoe UI", sans-serif';
+    let statusFontSize = 18;
+    ctx.font = `bold ${statusFontSize}px "Segoe UI", sans-serif`;
+    const maxStatusW = 406;
+    const statusTextW = ctx.measureText(state.statusText).width;
+    if (statusTextW > maxStatusW) {
+      statusFontSize = Math.max(12, Math.floor(statusFontSize * (maxStatusW / statusTextW)));
+      ctx.font = `bold ${statusFontSize}px "Segoe UI", sans-serif`;
+    }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.92)';
     ctx.shadowBlur = 4;
-    ctx.fillText(state.statusText, mbX + mbW / 2, mbY + mbH / 2);
+    ctx.fillText(state.statusText, mbX + mbW / 2, mbY + mbH * 0.51);
     ctx.restore();
 
     // 6. Free Spins Banner badge (if active)
@@ -1223,9 +1615,11 @@
       ctx.shadowBlur = 10;
       ctx.font = 'bold 16px "Segoe UI", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`★ FREE SPINS: ${state.freeSpins} REMAINING (2X MULTIPLIER) ★`, MACHINE_X + 410, MACHINE_Y + 235);
+      ctx.fillText(`★ FREE SPINS: ${state.freeSpins} REMAINING (2X MULTIPLIER) ★`, MACHINE_X + 412, MACHINE_Y + 235);
       ctx.restore();
     }
+
+    ctx.restore(); // End cabinet jolt transform
 
     // 7. Render Particles
     for (let i = state.particles.length - 1; i >= 0; i--) {
@@ -1248,12 +1642,142 @@
     }
   }
 
+  function renderPaylineGlassGuide(ctx) {
+    const paylineY = REEL_DEFS[0].y + PAYLINE_OFFSET_Y;
+    const leftX = REEL_DEFS[0].x;
+    const rightX = REEL_DEFS[2].x + REEL_DEFS[2].w;
+    const isWin = state.lastWin > 0 && !state.isSpinning;
+
+    ctx.save();
+    // Subtle horizontal payline laser/etched line across the 3 reels
+    ctx.strokeStyle = isWin ? 'rgba(251, 191, 36, 0.75)' : 'rgba(251, 191, 36, 0.18)';
+    ctx.lineWidth = isWin ? 2.5 : 1.2;
+    if (isWin) {
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10;
+    }
+    ctx.beginPath();
+    ctx.moveTo(leftX + 2, paylineY);
+    ctx.lineTo(rightX - 2, paylineY);
+    ctx.stroke();
+
+    // Left and right gold payline pointer triangles on the inner reel edges
+    ctx.fillStyle = isWin ? '#fbbf24' : 'rgba(251, 191, 36, 0.75)';
+    // Left pointer
+    ctx.beginPath();
+    ctx.moveTo(leftX, paylineY - 6);
+    ctx.lineTo(leftX + 8, paylineY);
+    ctx.lineTo(leftX, paylineY + 6);
+    ctx.closePath();
+    ctx.fill();
+    // Right pointer
+    ctx.beginPath();
+    ctx.moveTo(rightX, paylineY - 6);
+    ctx.lineTo(rightX - 8, paylineY);
+    ctx.lineTo(rightX, paylineY + 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function renderMarqueeGlow(ctx) {
+    ctx.save();
+    const isExcited = state.lastWin > 0 || state.freeSpins > 0 || state.isSpinning;
+    const pulse = 0.5 + 0.5 * Math.sin(state.marqueePhase * (isExcited ? 2.5 : 1.0));
+    const alpha = isExcited ? (0.10 + 0.12 * pulse) : (0.04 + 0.05 * pulse);
+    const cx = MACHINE_X + 412;
+    const cy = MACHINE_Y + 115;
+    const grad = ctx.createRadialGradient(cx, cy, 20, cx, cy, 260);
+    grad.addColorStop(0, `rgba(251, 191, 36, ${alpha})`);
+    grad.addColorStop(1, 'rgba(251, 191, 36, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(MACHINE_X + 140, MACHINE_Y + 10, 540, 210);
+    ctx.restore();
+  }
+
+  function renderMechanicalLever(ctx) {
+    if (!images.leverUp) return;
+    ctx.save();
+
+    const p = Math.max(-0.08, Math.min(1.0, state.leverPos));
+    const socketX = MACHINE_X + 719;
+    const socketY = MACHINE_Y + 566;
+    const restBallY = MACHINE_Y + 342;
+    const maxTravel = 228;
+
+    const ballCenterX = socketX;
+    const ballCenterY = restBallY + p * maxTravel;
+
+    // 3D arc perspective: as the arm swings forward toward the player, the knob enlarges slightly
+    const arcSin = Math.sin(Math.max(0, Math.min(1, p)) * Math.PI);
+    const ballScale = 1.0 + 0.11 * arcSin;
+    const ballW = 92 * ballScale;
+    const ballH = 92 * ballScale;
+
+    // 1. Recessed Mechanical Pivot Socket Bushing on the lever housing
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(socketX, socketY, 17, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Foreshortened Chrome Metallic Shaft (sliced from images.leverUp: sx=705, sy=390, sw=31, sh=176)
+    const shaftTopY = Math.min(socketY, ballCenterY + 32 * ballScale);
+    const shaftBottomY = socketY + 2;
+    const shaftH = shaftBottomY - shaftTopY;
+
+    if (shaftH > 2) {
+      ctx.drawImage(
+        images.leverUp,
+        705, 390, 31, 176,
+        MACHINE_X + 705, shaftTopY, 31, shaftH
+      );
+
+      // Dynamic 3D cylindrical shadow/sheen on the shaft as it tilts
+      const shaftGrad = ctx.createLinearGradient(0, shaftTopY, 0, shaftBottomY);
+      shaftGrad.addColorStop(0, `rgba(255, 255, 255, ${0.15 * arcSin})`);
+      shaftGrad.addColorStop(0.6, 'rgba(0, 0, 0, 0)');
+      shaftGrad.addColorStop(1, 'rgba(15, 23, 42, 0.42)');
+      ctx.fillStyle = shaftGrad;
+      ctx.fillRect(MACHINE_X + 705, shaftTopY, 31, shaftH);
+    }
+
+    // 3. Ambient shadow cast by the red ball onto the shaft/housing
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.22 + 0.25 * Math.max(0, p)})`;
+    ctx.beginPath();
+    ctx.ellipse(ballCenterX, ballCenterY + ballH * 0.42 + 6, ballW * 0.34, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. Glossy Red Ball Handle (sliced from images.leverUp: sx=673, sy=296, sw=92, sh=92)
+    const isLeverActive = (hoveredButtonId === 'lever' && !state.isSpinning) || state.leverPhase === 'dragging';
+    if (isLeverActive) {
+      ctx.shadowColor = 'rgba(248, 113, 113, 0.75)';
+      ctx.shadowBlur = 16;
+    }
+
+    ctx.drawImage(
+      images.leverUp,
+      673, 296, 92, 92,
+      ballCenterX - ballW / 2,
+      ballCenterY - ballH / 2,
+      ballW,
+      ballH
+    );
+
+    ctx.restore();
+  }
+
   function renderHUD(ctx) {
     ctx.save();
 
     // Bottom Console Bar Panel
     const barX = 40, barY = 630, barW = 1200, barH = 68;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    const barGrad = ctx.createLinearGradient(0, barY, 0, barY + barH);
+    barGrad.addColorStop(0, 'rgba(20, 29, 52, 0.96)');
+    barGrad.addColorStop(1, 'rgba(11, 17, 34, 0.98)');
+    ctx.fillStyle = barGrad;
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1265,10 +1789,14 @@
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(215, 638);
-    ctx.lineTo(215, 690);
-    ctx.moveTo(365, 638);
-    ctx.lineTo(365, 690);
+    ctx.moveTo(225, 638);
+    ctx.lineTo(225, 690);
+    ctx.moveTo(380, 638);
+    ctx.lineTo(380, 690);
+    ctx.moveTo(570, 638);
+    ctx.lineTo(570, 690);
+    ctx.moveTo(1012, 638);
+    ctx.lineTo(1012, 690);
     ctx.stroke();
 
     // A. Balance Section
@@ -1277,7 +1805,8 @@
     ctx.textAlign = 'left';
     ctx.fillText('COIN BALANCE', 65, 650);
 
-    ctx.fillStyle = state.coins < 10 ? '#ef4444' : '#f59e0b';
+    const needsReload = state.coins < 10 || state.coins < getCurrentBet();
+    ctx.fillStyle = needsReload ? '#ef4444' : '#f59e0b';
     ctx.font = 'bold 22px "Segoe UI", monospace';
     ctx.fillText(state.coins.toLocaleString() + (state.coins < 10 ? ' (RELOAD)' : ''), 65, 676);
 
@@ -1285,34 +1814,34 @@
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('LAST WIN', 235, 650);
+    ctx.fillText('LAST WIN', 245, 650);
 
     ctx.fillStyle = state.lastWin > 0 ? '#10b981' : '#64748b';
     ctx.font = 'bold 22px "Segoe UI", monospace';
-    ctx.fillText(state.lastWin > 0 ? `+${state.lastWin.toLocaleString()}` : '0', 235, 676);
+    ctx.fillText(state.lastWin > 0 ? `+${state.lastWin.toLocaleString()}` : '0', 245, 676);
 
-    // C. Bet Selector Section
+    // C. Bet Selector Section (Centered at x = 475 between prevBtn at 400..442 and nextBtn at 508..550)
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('TOTAL BET', 452, 650);
+    ctx.fillText('TOTAL BET', 475, 650);
 
     // Prev Bet Sprite Button
     const prevBtn = UI_BUTTONS.find(b => b.id === 'betPrev');
     const prevImg = (hoveredButtonId === 'betPrev') ? images.btnPrevHover : images.btnPrevNorm;
-    if (prevImg) ctx.drawImage(prevImg, prevBtn.x, prevBtn.y, prevBtn.w, prevBtn.h);
+    if (prevImg && prevBtn) ctx.drawImage(prevImg, prevBtn.x, prevBtn.y, prevBtn.w, prevBtn.h);
 
     // Bet Amount Value
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 22px "Segoe UI", monospace';
-    ctx.fillText(getCurrentBet().toString(), 452, 676);
+    ctx.fillText(getCurrentBet().toString(), 475, 676);
 
     // Next Bet Sprite Button
     const nextBtn = UI_BUTTONS.find(b => b.id === 'betNext');
     const nextImg = (hoveredButtonId === 'betNext') ? images.btnNextHover : images.btnNextNorm;
-    if (nextImg) ctx.drawImage(nextImg, nextBtn.x, nextBtn.y, nextBtn.w, nextBtn.h);
+    if (nextImg && nextBtn) ctx.drawImage(nextImg, nextBtn.x, nextBtn.y, nextBtn.w, nextBtn.h);
 
-    // D. Bet Settings Button (Spacious and prominent console button)
+    // D. Bet Settings Button (Centered with custom vector gear icon - 100% immune to Safari emoji offset bug)
     drawSimpleButton(ctx, UI_BUTTONS.find(b => b.id === 'betSettings'));
 
     // E. Sound Toggle Button
@@ -1322,73 +1851,158 @@
       drawSimpleButton(ctx, sndBtn);
     }
 
-    // H. Spin Button (Right Side Large)
+    // F. Spin Button (Right Side Large, directly aligned above Auto Spin)
     drawLargeActionButton(ctx, UI_BUTTONS.find(b => b.id === 'spin'), state.isSpinning);
 
-    // I. Auto Spin Button
+    // G. Auto Spin Button (Aligned inside the console bar at y = 641, h = 46)
     const autoBtn = UI_BUTTONS.find(b => b.id === 'auto');
     if (autoBtn) {
       autoBtn.label = state.autoSpin ? 'STOP AUTO' : 'AUTO SPIN';
       autoBtn.color = state.autoSpin ? '#ef4444' : '#3b82f6';
+      autoBtn.border = state.autoSpin ? '#b91c1c' : '#1d4ed8';
       drawSimpleButton(ctx, autoBtn);
     }
 
     ctx.restore();
   }
 
+  function drawGearIcon(ctx, cx, cy, outerR) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#ffffff';
+    const teeth = 8;
+    const innerR = outerR * 0.72;
+    const holeR = outerR * 0.34;
+
+    ctx.beginPath();
+    for (let i = 0; i < teeth * 2; i++) {
+      const r = (i % 2 === 0) ? outerR : innerR;
+      const a1 = (i * Math.PI) / teeth - Math.PI / (teeth * 2.5);
+      const a2 = (i * Math.PI) / teeth + Math.PI / (teeth * 2.5);
+      if (i === 0) {
+        ctx.moveTo(Math.cos(a1) * r, Math.sin(a1) * r);
+      } else {
+        ctx.lineTo(Math.cos(a1) * r, Math.sin(a1) * r);
+      }
+      ctx.lineTo(Math.cos(a2) * r, Math.sin(a2) * r);
+    }
+    ctx.closePath();
+    // Cut out center hole using evenodd winding rule
+    ctx.moveTo(holeR, 0);
+    ctx.arc(0, 0, holeR, 0, Math.PI * 2, true);
+    ctx.fill('evenodd');
+    ctx.restore();
+  }
+
   function drawSimpleButton(ctx, btn) {
     if (!btn) return;
     const isHover = hoveredButtonId === btn.id;
+    const isPressed = state.pressedButtonId === btn.id;
+    const yOff = isPressed ? 1.5 : 0;
+
     ctx.save();
-    ctx.fillStyle = isHover ? lightenColor(btn.color, 20) : btn.color;
-    ctx.strokeStyle = btn.border;
+    const topColor = isHover ? lightenColor(btn.color, 28) : lightenColor(btn.color, 12);
+    const botColor = isHover ? lightenColor(btn.color, 6) : lightenColor(btn.color, -10);
+    const grad = ctx.createLinearGradient(0, btn.y + yOff, 0, btn.y + btn.h + yOff);
+    grad.addColorStop(0, topColor);
+    grad.addColorStop(1, botColor);
+
+    ctx.fillStyle = grad;
+    ctx.strokeStyle = isHover ? lightenColor(btn.border, 25) : btn.border;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(btn.x, btn.y, btn.w, btn.h, 8);
+    ctx.roundRect(btn.x, btn.y + yOff, btn.w, btn.h, 8);
     ctx.fill();
     ctx.stroke();
 
+    // Subtle top inner glass specular highlight
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(btn.x + 8, btn.y + yOff + 2);
+    ctx.lineTo(btn.x + btn.w - 8, btn.y + yOff + 2);
+    ctx.stroke();
+
+    // Deterministic Left-Anchored Math Centering (100% immune to Safari WebKit textAlign='center' bugs)
     ctx.fillStyle = '#ffffff';
-    let fontSize = 13.5;
+    let fontSize = 14;
     ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
-    const textWidth = ctx.measureText(btn.label).width;
-    const maxTextWidth = btn.w - 12;
-    if (textWidth > maxTextWidth) {
-      fontSize = Math.max(9, Math.floor(fontSize * (maxTextWidth / textWidth)));
+    const hasGear = btn.icon === 'gear';
+    const iconW = hasGear ? 16 : 0;
+    const iconGap = hasGear ? 8 : 0;
+
+    let textWidth = ctx.measureText(btn.label).width;
+    const maxContentWidth = btn.w - 16;
+    if (iconW + iconGap + textWidth > maxContentWidth) {
+      const availForText = Math.max(20, maxContentWidth - iconW - iconGap);
+      fontSize = Math.max(9, Math.floor(fontSize * (availForText / textWidth)));
       ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+      textWidth = ctx.measureText(btn.label).width;
     }
-    ctx.textAlign = 'center';
+
+    const totalContentW = iconW + iconGap + textWidth;
+    const startX = Math.round(btn.x + (btn.w - totalContentW) / 2);
+    const centerY = Math.round(btn.y + yOff + btn.h / 2);
+
+    if (hasGear) {
+      drawGearIcon(ctx, startX + iconW / 2, centerY, 7.5);
+    }
+
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = 2;
+    ctx.fillText(btn.label, startX + iconW + iconGap, centerY + 0.5);
     ctx.restore();
   }
 
   function drawLargeActionButton(ctx, btn, isDisabled) {
     if (!btn) return;
     const isHover = hoveredButtonId === btn.id && !isDisabled;
+    const isPressed = state.pressedButtonId === btn.id && !isDisabled;
+    const yOff = isPressed ? 2 : 0;
     ctx.save();
 
     if (isDisabled) {
       ctx.fillStyle = '#475569';
       ctx.strokeStyle = '#334155';
     } else {
-      ctx.fillStyle = isHover ? '#4ade80' : btn.color;
-      ctx.strokeStyle = btn.border;
-      ctx.shadowColor = isHover ? '#86efac' : '#22c55e';
-      ctx.shadowBlur = isHover ? 16 : 8;
+      const grad = ctx.createLinearGradient(0, btn.y + yOff, 0, btn.y + btn.h + yOff);
+      grad.addColorStop(0, isHover ? '#4ade80' : '#34d399');
+      grad.addColorStop(1, isHover ? '#16a34a' : '#15803d');
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = isHover ? '#86efac' : btn.border;
+      ctx.shadowColor = isHover ? '#86efac' : 'rgba(34, 197, 94, 0.7)';
+      ctx.shadowBlur = isHover ? 18 : 10;
     }
 
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.roundRect(btn.x, btn.y, btn.w, btn.h, 12);
+    ctx.roundRect(btn.x, btn.y + yOff, btn.w, btn.h, 12);
     ctx.fill();
     ctx.stroke();
 
+    // Top inner specular highlight
+    if (!isDisabled) {
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(btn.x + 12, btn.y + yOff + 3);
+      ctx.lineTo(btn.x + btn.w - 12, btn.y + yOff + 3);
+      ctx.stroke();
+    }
+
+    const labelText = isDisabled ? 'SPINNING...' : btn.label;
     ctx.fillStyle = isDisabled ? '#94a3b8' : '#ffffff';
     ctx.font = 'bold 22px "Segoe UI", sans-serif';
-    ctx.textAlign = 'center';
+    const textW = ctx.measureText(labelText).width;
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(isDisabled ? 'SPINNING...' : btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 3;
+    ctx.fillText(labelText, Math.round(btn.x + (btn.w - textW) / 2), Math.round(btn.y + yOff + btn.h / 2) + 0.5);
     ctx.restore();
   }
 
@@ -1601,8 +2215,17 @@
         multInput.value = rule.multiplier;
         multInput.min = '0';
         multInput.max = '1000';
+        multInput.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          if (Number.isFinite(val) && val >= 0) {
+            rule.multiplier = Math.min(10000, val);
+            saveActiveRules();
+          }
+        });
         multInput.addEventListener('change', (e) => {
-          rule.multiplier = Math.max(0, parseInt(e.target.value) || 0);
+          const val = parseInt(e.target.value, 10);
+          rule.multiplier = Math.max(0, Math.min(10000, Number.isFinite(val) ? val : 0));
+          e.target.value = rule.multiplier;
           saveActiveRules();
         });
         const xLabel = document.createElement('span');
@@ -1650,6 +2273,18 @@
 
       tbody.appendChild(tr);
     });
+
+    if (state.activeRules.length === 0) {
+      const emptyTr = document.createElement('tr');
+      const emptyTd = document.createElement('td');
+      emptyTd.colSpan = 6;
+      emptyTd.style.textAlign = 'center';
+      emptyTd.style.padding = '16px';
+      emptyTd.style.color = '#f59e0b';
+      emptyTd.textContent = '⚠️ No winning rules configured. Add a custom rule below or click "Reset to Default".';
+      emptyTr.appendChild(emptyTd);
+      tbody.appendChild(emptyTr);
+    }
   }
 
   function applyRuleTemplate(templateKey) {
@@ -1685,20 +2320,20 @@
     {
       title: '⚙️ Bet Settings & Custom Rules',
       badge: 'STEP 2 OF 4 · WAGER & RULES',
-      desc: 'Use the <strong><</strong> and <strong>></strong> steppers to adjust your bet, or click the spacious <strong>⚙️ BET SETTINGS</strong> button right here to manually configure bet amount, toggle winning combinations, and edit payout multipliers!',
-      target: { x: 370, y: 636, w: 425, h: 56 }
+      desc: 'Use the <strong><</strong> and <strong>></strong> steppers to adjust your bet, or click the <strong>BET SETTINGS</strong> button right here to manually configure bet amount, toggle winning combinations, and edit payout multipliers!',
+      target: { x: 392, y: 635, w: 420, h: 58 }
     },
     {
       title: '🕹️ Pull the Lever or Hit SPIN',
       badge: 'STEP 3 OF 4 · CONTROLS',
-      desc: 'Click or drag down the <strong>Mechanical Lever</strong> on the right, press the large <strong>SPIN</strong> button, or hit the <strong>SPACEBAR</strong> on your keyboard to spin the reels!',
-      target: { x: MACHINE_X + 680, y: MACHINE_Y + 275, w: 120, h: 330 }
+      desc: 'Grab and <strong>physically drag down the Mechanical Lever</strong> on the right (or click it), press the large <strong>SPIN</strong> button, or hit the <strong>SPACEBAR</strong> to spin the reels!',
+      target: { x: MACHINE_X + 668, y: MACHINE_Y + 280, w: 112, h: 315 }
     },
     {
       title: '🪙 You’re Ready to Play!',
       badge: 'STEP 4 OF 4 · READY TO PLAY',
       desc: 'You start with <strong>1,000 complimentary coins</strong>. Adjust your bet and customize your winning combinations in <strong>BET SETTINGS</strong> anytime. Have fun & good luck!',
-      target: { x: 50, y: 636, w: 315, h: 56 }
+      target: { x: 50, y: 635, w: 325, h: 58 }
     }
   ];
 
@@ -1961,22 +2596,22 @@
 
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        if (!state.isSpinning) executeSpin();
+        if (!state.isSpinning) executeSpin(false);
       } else if (e.key === 'Escape') {
         closeBetSettingsModal();
         state.showPaytable = false;
-        state.showCelebration = false;
-      } else if (e.key === 'b' || e.key === 'B') {
+        if (state.showCelebration) {
+          state.showCelebration = false;
+          concludeSpin();
+        }
+      } else if (e.key === 'b' || e.key === 'B' || e.key === 'p' || e.key === 'P') {
         toggleBetSettingsModal();
-      } else if (e.key === 'p' || e.key === 'P') {
-        state.showPaytable = !state.showPaytable;
-        if (state.showPaytable) closeBetSettingsModal();
       } else if (e.key === 'm' || e.key === 'M') {
         isMuted = !isMuted;
         playSound('btnClick', 0.7);
       } else if (e.key === 'a' || e.key === 'A') {
         state.autoSpin = !state.autoSpin;
-        if (state.autoSpin && !state.isSpinning) executeSpin();
+        if (state.autoSpin && !state.isSpinning) executeSpin(false);
       } else if (e.key === 'r' || e.key === 'R') {
         reloadFreeCoins();
       }
@@ -1994,14 +2629,46 @@
     // Create Reel Instances
     state.reels = REEL_DEFS.map((def, idx) => new Reel(idx, def));
 
-    // Pointer events
+    // Pointer & Interactive Lever Drag events
     canvas.addEventListener('mousemove', e => handlePointer(e.clientX, e.clientY, false));
+    window.addEventListener('mousemove', e => {
+      if (state.leverPhase === 'dragging') {
+        handlePointer(e.clientX, e.clientY, false);
+      }
+    });
     canvas.addEventListener('mousedown', e => handlePointer(e.clientX, e.clientY, true));
+    window.addEventListener('mouseup', () => {
+      state.pressedButtonId = null;
+      if (state.leverPhase === 'dragging') {
+        completeLeverDrag(false);
+      }
+    });
+
     canvas.addEventListener('touchstart', e => {
       const t = e.touches[0];
-      handlePointer(t.clientX, t.clientY, true);
+      if (t) handlePointer(t.clientX, t.clientY, true);
       e.preventDefault();
     }, { passive: false });
+
+    canvas.addEventListener('touchmove', e => {
+      const t = e.touches[0];
+      if (t) handlePointer(t.clientX, t.clientY, false);
+      e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+      state.pressedButtonId = null;
+      if (state.leverPhase === 'dragging') {
+        completeLeverDrag(false);
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      state.pressedButtonId = null;
+      if (state.leverPhase === 'dragging') {
+        completeLeverDrag(false);
+      }
+    });
 
     // Setup Custom Rule Engine & Manual Bet Configurator
     setupRuleEngineUI();
@@ -2023,16 +2690,11 @@
       // Start RAF Loop
       let lastTime = performance.now();
       function loop(now) {
-        const dt = Math.min(0.1, (now - lastTime) / 1000);
+        const dt = Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
         lastTime = now;
 
-        // Update lever spring return
-        if (state.leverState === 'down') {
-          state.leverPullTimer -= dt;
-          if (state.leverPullTimer <= 0) {
-            state.leverState = 'up';
-          }
-        }
+        // Update continuous mechanical lever spring physics & cabinet micro-jolt
+        updateLeverAndCabinet(dt);
 
         // Update reels
         state.reels.forEach(r => r.update(dt));
