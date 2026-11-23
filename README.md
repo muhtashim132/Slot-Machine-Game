@@ -46,7 +46,7 @@ When launching the game for the first time on any device, an **interactive 5-ste
   3. **Interactive Lever & Spin**: Shows how to pull the mechanical lever or press Spacebar/Spin.
   4. **Paytable & Free Spins**: Explains symbol payouts, the 3-Bells Free Spins feature, and the 2X win multiplier.
   5. **Bankroll & Tour Replay**: Welcomes the player with 1,000 complimentary coins and notes that the tour can be replayed anytime.
-- ❓ **Replay Anytime**: Click the **`❓`** button on the bottom console bar or the top **`❓ HOW TO PLAY & WALKTHROUGH`** button to restart the tour at any time.
+- ❓ **Replay Anytime**: Click the **`❓ TOUR`** button on the bottom console bar or the top **`❓ HOW TO PLAY & WALKTHROUGH`** badge to restart the tour at any time.
 
 ---
 

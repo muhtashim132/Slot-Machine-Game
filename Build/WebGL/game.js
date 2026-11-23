@@ -1036,7 +1036,7 @@
     },
     {
       id: 'betPrev',
-      x: 395, y: 642, w: 42, h: 42,
+      x: 375, y: 642, w: 40, h: 42,
       isSprite: true,
       spriteNorm: 'btnPrevNorm',
       spriteHover: 'btnPrevHover',
@@ -1048,7 +1048,7 @@
     },
     {
       id: 'betCenterClick',
-      x: 440, y: 642, w: 80, h: 42,
+      x: 418, y: 642, w: 68, h: 42,
       isTransparent: true,
       action: () => {
         playSound('btnClick', 0.6);
@@ -1057,7 +1057,7 @@
     },
     {
       id: 'betNext',
-      x: 524, y: 642, w: 42, h: 42,
+      x: 489, y: 642, w: 40, h: 42,
       isSprite: true,
       spriteNorm: 'btnNextNorm',
       spriteHover: 'btnNextHover',
@@ -1069,7 +1069,7 @@
     },
     {
       id: 'betSettings',
-      x: 580, y: 642, w: 145, h: 44,
+      x: 546, y: 642, w: 164, h: 44,
       label: '⚙️ BET SETTINGS',
       color: '#4f46e5',
       border: '#6366f1',
@@ -1080,7 +1080,7 @@
     },
     {
       id: 'paytable',
-      x: 740, y: 642, w: 110, h: 44,
+      x: 725, y: 642, w: 110, h: 44,
       label: 'PAYTABLE',
       color: '#8b5cf6',
       border: '#6d28d9',
@@ -1092,7 +1092,7 @@
     },
     {
       id: 'sound',
-      x: 865, y: 642, w: 105, h: 44,
+      x: 850, y: 642, w: 105, h: 44,
       label: 'SOUND: ON',
       color: '#475569',
       border: '#334155',
@@ -1103,8 +1103,8 @@
     },
     {
       id: 'tourBtn',
-      x: 985, y: 642, w: 48, h: 44,
-      label: '❓',
+      x: 970, y: 642, w: 58, h: 44,
+      label: '❓ TOUR',
       color: '#0284c7',
       border: '#0369a1',
       action: () => {
@@ -1290,8 +1290,8 @@
     ctx.beginPath();
     ctx.moveTo(215, 638);
     ctx.lineTo(215, 690);
-    ctx.moveTo(375, 638);
-    ctx.lineTo(375, 690);
+    ctx.moveTo(365, 638);
+    ctx.lineTo(365, 690);
     ctx.stroke();
 
     // A. Balance Section
@@ -1318,7 +1318,7 @@
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('TOTAL BET', 482, 650);
+    ctx.fillText('TOTAL BET', 452, 650);
 
     // Prev Bet Sprite Button
     const prevBtn = UI_BUTTONS.find(b => b.id === 'betPrev');
@@ -1328,7 +1328,7 @@
     // Bet Amount Value
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 22px "Segoe UI", monospace';
-    ctx.fillText(getCurrentBet().toString(), 482, 676);
+    ctx.fillText(getCurrentBet().toString(), 452, 676);
 
     // Next Bet Sprite Button
     const nextBtn = UI_BUTTONS.find(b => b.id === 'betNext');
@@ -1378,7 +1378,14 @@
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px "Segoe UI", sans-serif';
+    let fontSize = 13.5;
+    ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+    const textWidth = ctx.measureText(btn.label).width;
+    const maxTextWidth = btn.w - 12;
+    if (textWidth > maxTextWidth) {
+      fontSize = Math.max(9, Math.floor(fontSize * (maxTextWidth / textWidth)));
+      ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+    }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
@@ -1708,7 +1715,7 @@
       title: '⚙️ Bet Settings & Custom Rules',
       badge: 'STEP 2 OF 5 · WAGER & RULES',
       desc: 'Use the <strong><</strong> and <strong>></strong> steppers to adjust your bet, or click <strong>⚙️ BET SETTINGS</strong> right here to manually configure bet amount, toggle winning combinations, and edit payout multipliers!',
-      target: { x: 390, y: 638, w: 340, h: 52 }
+      target: { x: 370, y: 636, w: 345, h: 56 }
     },
     {
       title: '🕹️ Pull the Lever or Hit SPIN',
@@ -1720,13 +1727,13 @@
       title: '📜 Paytable & Bonus Features',
       badge: 'STEP 4 OF 5 · BONUSES',
       desc: 'Click <strong>PAYTABLE</strong> to inspect live multipliers. Land <strong>3 Bells</strong> to trigger <strong>5 Free Spins</strong> with an automatic <strong>2X Multiplier</strong> on all payouts!',
-      target: { x: 735, y: 638, w: 120, h: 52 }
+      target: { x: 720, y: 636, w: 120, h: 56 }
     },
     {
       title: '🪙 You’re Ready to Play!',
       badge: 'STEP 5 OF 5 · BANKROLL',
-      desc: 'You start with <strong>1,000 complimentary coins</strong>. Click the <strong>❓</strong> button on the console bar anytime to replay this tour. Good luck & enjoy the game!',
-      target: { x: 55, y: 638, w: 325, h: 52 }
+      desc: 'You start with <strong>1,000 complimentary coins</strong>. Click the <strong>❓ TOUR</strong> button on the console bar anytime to replay this tour. Good luck & enjoy the game!',
+      target: { x: 50, y: 636, w: 315, h: 56 }
     }
   ];
 
@@ -1791,7 +1798,7 @@
     const scaleX = rect.width / CANVAS_WIDTH;
     const scaleY = rect.height / CANVAS_HEIGHT;
 
-    const pad = 6;
+    const pad = 4;
     const spotLeft = (rect.left - containerRect.left) + (t.x - pad) * scaleX;
     const spotTop = (rect.top - containerRect.top) + (t.y - pad) * scaleY;
     const spotWidth = (t.w + pad * 2) * scaleX;
