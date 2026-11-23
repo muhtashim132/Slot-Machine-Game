@@ -6,6 +6,31 @@ Designed with clean **Object-Oriented Programming (OOP)**, cryptographically sec
 
 ---
 
+## 📊 Presentation Deck & Engineering Walkthrough (PDF & Interactive Slides)
+
+A complete **12-Slide Widescreen (16:9 Full-HD) Presentation Deck** covering **Part I: About the Game** and **Part II: How We Built It** is included directly in the repository:
+
+- 📄 **[`Slot_Machine_Presentation.pdf`](./Slot_Machine_Presentation.pdf)** — Ready-to-present 12-slide Full-HD (`1920×1080`) PDF presentation with embedded game sprites, kinematic physics curves, probability charts, and system architecture diagrams.
+- 🖥️ **[`Presentation.html`](./Presentation.html)** — Interactive browser slide deck with one-click **Print / Save as PDF** support.
+
+### Slide Deck Outline
+| Slide | Section | Topic | Key Highlights |
+| :---: | :--- | :--- | :--- |
+| **01** | **Part I: About The Game** | **Title & Executive Overview** | 96.5% RTP CSPRNG, 60 FPS spring-damped physics, Unity C# + WebGL parity, 4 core symbols |
+| **02** | **Part I: About The Game** | **Core Loop & Spotlight Onboarding** | 1,000-coin bankroll, 4-step spotlight guided tour, full keyboard shortcuts (`Space`, `B`, `A`, `M`, `R`, `Esc`) |
+| **03** | **Part I: About The Game** | **Dynamic Winning Rule Engine** | Strict 3-of-a-kind assignment default, Classic Arcade & High Roller presets, custom rule builder |
+| **04** | **Part I: About The Game** | **Bonus Mechanics** | ⚡ **Lucky Respin** (Hold & Spin 3rd reel with golden locks) & 🔔 **Free Spins Frenzy** (5 spins @ 2x multiplier) |
+| **05** | **Part I: About The Game** | **Interactive 3D Lever & Celebrations** | Click-or-drag mechanical lever, ratchet clicks, cabinet micro-jolt, 120-particle jackpot fountain |
+| **06** | **Part II: How We Built It** | **Clean OOP System Architecture** | 4 decoupled C# namespaces (`Core`, `Reels`, `Bonus`, `UI`) & deterministic finite state machine |
+| **07** | **Part II: How We Built It** | **Cryptographic RNG & 96.5% RTP Math** | Unbiased 32-bit rejection sampling (`RNGCryptoServiceProvider` / `crypto.getRandomValues`) & pre-spin locking |
+| **08** | **Part II: How We Built It** | **6-Phase Continuous Drum Tape Physics** | Virtual strip map (`Map<step, symbol>`), upward stepper kickback, 3D cylindrical foreshortening & cosine bounce |
+| **09** | **Part II: How We Built It** | **3D Lever Spring-Damper ODE** | Second-order differential equation ($a = -k x - c v$, $k=220, c=16.5$) & coupled cabinet micro-jolt ($k=340, c=24$) |
+| **10** | **Part II: How We Built It** | **Audio Synthesis & `file://` Pipeline** | 8 synthesized WAVs embedded in Base64 RAM buffers + real-time WebAudio procedural oscillators |
+| **11** | **Part II: How We Built It** | **UI Engineering & Edge-Case Guards** | 235px zero-overlap console bar, Safari centering fixes, mid-spin/free-spin wager locks & timer cleanup |
+| **12** | **Part II: How We Built It** | **Engineering Commit Timeline & Run Guide** | 14 atomic commits (`d8eabae` → `b6cb09a`) from initial Unity setup to 3D physics & GitHub deployment |
+
+---
+
 ## 🎮 Playable WebGL Build
 
 The repository includes a ready-to-play WebGL build located in [`Build/WebGL/`](./Build/WebGL/).
@@ -188,21 +213,46 @@ SlotMachine/
 
 ---
 
-## 📐 Thought Process & Architecture Approach
+## 📐 Thought Process, System Architecture & How We Built It
 
-1. **Separation of Concerns**:
-   - The game logic is decoupled into distinct subsystems: `RNGService` handles probabilities, `PayoutTable` determines payouts, `SlotReelManager` manages physics, and `UIManager` controls visual presentations.
-   - This ensures unit testability and easy tuning of gameplay balance without modifying animation code.
+### 1. Clean OOP Separation of Concerns (4 Decoupled Subsystems)
+The codebase is architected into four modular namespaces in Unity C# ([`Assets/Scripts/`](./Assets/Scripts/)) and mirrored 1:1 in the standalone WebGL runtime ([`Build/WebGL/game.js`](./Build/WebGL/game.js)):
+- **`SlotMachine.Core`**:
+  - [`GameManager.cs`](./Assets/Scripts/Core/GameManager.cs): Central finite state machine (`Idle` → `Spinning` → `Evaluating` → `Respinning` / `Celebrating`) and player bankroll manager.
+  - [`RNGService.cs`](./Assets/Scripts/Core/RNGService.cs): Cryptographically fair random outcome generator using rejection sampling to eliminate 32-bit modulo bias.
+  - [`PayoutTable.cs`](./Assets/Scripts/Core/PayoutTable.cs): Dynamic rule evaluation engine supporting live rule toggling, custom multipliers, and custom rule insertion.
+  - [`SoundManager.cs`](./Assets/Scripts/Core/SoundManager.cs): Multi-channel audio playback controller.
+- **`SlotMachine.Reels`**:
+  - [`SlotReelManager.cs`](./Assets/Scripts/Reels/SlotReelManager.cs): Coordinates 3 reel drums, staggered stop delays (`1.25s`, `+0.45s`, `+0.45s`), suspense extensions (`1.75x` delay when Reel 1 and Reel 2 match), and single-reel isolation for Lucky Respins.
+  - [`ReelStrip.cs`](./Assets/Scripts/Reels/ReelStrip.cs) & [`ReelSymbol.cs`](./Assets/Scripts/Reels/ReelSymbol.cs): Symbol object pooling, continuous vertical tape wrapping, cubic deceleration, and damped cosine bounce.
+- **`SlotMachine.Bonus`**:
+  - [`BonusManager.cs`](./Assets/Scripts/Bonus/BonusManager.cs): Manages the Free Spins state counter, active `2x` payout multiplier, and Lucky Respin reel locking.
+- **`SlotMachine.UI`**:
+  - [`UIManager.cs`](./Assets/Scripts/UI/UIManager.cs), [`LeverController.cs`](./Assets/Scripts/UI/LeverController.cs), & [`WinCelebrationUI.cs`](./Assets/Scripts/UI/WinCelebrationUI.cs): HUD counters, pointer/drag lever interaction, and quadratic ease-out coin count-up celebration tickers.
 
-2. **Deterministic Pre-calculation vs. Physics Simulation**:
-   - Following industry-standard slot machine practices, the random outcome is calculated *first* using cryptographically secure RNG.
-   - The reels spin smoothly for an aesthetically pleasing duration and are guided to stop cleanly on the pre-selected symbols with a satisfying spring bounce.
+### 2. Unbiased Cryptographic RNG & Pre-Spin Outcome Locking
+- Following regulated casino gaming standards, the outcome array `[R1, R2, R3]` is drawn **before** the reels begin accelerating, making client-side stopper timing manipulation impossible.
+- Uses `RNGCryptoServiceProvider` in Unity C# and `window.crypto.getRandomValues(new Uint32Array(1))` in WebGL with rejection sampling (`maxValid = (1L << 32) - ((1L << 32) % diff)`) to ensure a mathematically uniform draw before applying the `10% / 20% / 30% / 40%` symbol weights.
 
-3. **Responsive Visual & Audio Feedback**:
-   - Every player interaction (lever pull, button press, reel stop, win counter ticker) has dedicated acoustic and visual feedback to maximize player engagement.
+### 3. Continuous Virtual Drum Tape & 6-Phase Reel Physics
+- Each reel maintains a persistent virtual tape (`Map<step, symbol>`) with a non-repeating neighbor generator so symbols scroll seamlessly without popping or visual seams.
+- **6-Phase Kinematics**:
+  1. **Stepper-Motor Upward Kickback (75ms)**: $\text{pos}(t) = \text{startPos} - 0.13 \sin(\pi t / 0.075)$
+  2. **Rapid Downward Acceleration**: Accelerates at $68\text{ symbols/s}^2$ up to terminal velocity ($24.5\text{ symbols/s}$).
+  3. **Velocity-Proportional Motion Blur**: Multi-pass vertical alpha trails stretch proportionally to drum speed.
+  4. **6-Symbol Landing Runway**: Target symbol is stamped 6 steps ahead (`Math.ceil(position) + 6`) and approached via cubic ease-out $1 - (1 - u)^{2.5}$.
+  5. **Physical Overshoot (+20.5px)**: Drops past the payline, firing the mechanical latch thud (`reel_stop.wav`) and a physical cabinet micro-jolt.
+  6. **Damped Cosine Rebound**: Springs back to dead-center alignment via $y(v) = \text{targetStep} + A \cos\left(\frac{\pi}{2}v\right)(1 - 0.25v)$.
+- **3D Cylindrical Drum Foreshortening**: Symbols near the top and bottom curve of the reel window compress vertically ($\text{cylSquashY} = \max(0.82, 1.0 - 0.12 \cdot d^2)$) beneath a 6-stop cylindrical shadow and specular glass gradient.
 
-4. **Dual Engine Support**:
-   - Both the full Unity C# project and the WebGL deployment share identical logic, dimensions, coordinate offsets, and mathematical models.
+### 4. Second-Order ODE Lever Spring-Damper & Cabinet Micro-Jolt
+- The mechanical lever supports both instant click-to-pull and continuous downward pointer dragging across a `125px` vertical stroke, firing sawtooth ratchet clicks every `16%` of travel.
+- Releasing the lever integrates a second-order spring-damper differential equation every frame:
+  $$a_{\text{lever}} = -k \cdot x - c \cdot v \quad (k = 220,\; c = 16.5)$$
+  allowing a natural top rebound overshoot down to `leverPos = -0.08` while transferring vertical impulse shocks to the cabinet frame ($k_{\text{cabinet}} = 340,\; c_{\text{cabinet}} = 24$).
+
+### 5. Zero-Server Audio Synthesis & In-Memory Base64 Pipeline
+- To support both local HTTP servers and direct `file://` double-clicking (where browsers block `fetch()` due to CORS), all 8 synthesized arcade `.wav` files are embedded in `AUDIO_BASE64` inside [`Build/WebGL/game.js`](./Build/WebGL/game.js) and decoded directly in RAM via `AudioContext.decodeAudioData()`, paired with real-time WebAudio `OscillatorNode` synthesis for high-frequency gear and ratchet ticks.
 
 ---
 

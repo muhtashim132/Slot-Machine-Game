@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Classic Slot Machine — Game & Engineering Presentation Deck</title>
+  <style>
+    :root {
+      --bg-dark: #0b0f1d;
+      --bg-card: #141b30;
+      --bg-card-alt: #1a233e;
+      --bg-code: #0d1221;
+      --border: #2d3a5f;
+      --gold: #fbbf24;
+      --gold-bright: #fde047;
+      --cyan: #38bdf8;
+      --green: #22c55e;
+      --purple: #a855f7;
+      --orange: #f97316;
+      --white: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--white);
+      line-height: 1.5;
+    }
+    /* Sticky Toolbar (Hidden when printing to PDF) */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 32px;
+      background: rgba(11, 15, 29, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      background: var(--bg-card);
+      color: var(--white);
+      border: 1px solid var(--border);
+      padding: 7px 15px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-primary {
+      background: var(--gold);
+      color: #0b0f1d;
+      border-color: var(--gold);
+    }
+    .btn-primary:hover { background: var(--gold-bright); color: #0b0f1d; }
+
+    /* Slide Container */
+    .deck {
+      max-width: 1280px;
+      margin: 28px auto;
+      padding: 0 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+    }
+    .slide {
+      background: linear-gradient(145deg, #11172b 0%, #0b0f1d 100%);
+      border: 1px solid var(--border);
+      border-top: 5px solid var(--gold);
+      border-radius: 18px;
+      padding: 40px 48px;
+      min-height: 680px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+    }
+    .slide-header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+    }
+    .slide-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+    }
+    .badge-cyan {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+    .slide-num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--bg-card);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+    .slide h1 {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--white);
+    }
+    .slide h2 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--white);
+    }
+    .slide-subtitle {
+      font-size: 16px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .card-cyan h3 { color: var(--cyan); }
+    .card-green h3 { color: var(--green); }
+    .card-purple h3 { color: var(--purple); }
+    ul.clean-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    ul.clean-list li {
+      font-size: 14.5px;
+      color: var(--muted);
+      padding-left: 18px;
+      position: relative;
+    }
+    ul.clean-list li::before {
+      content: "•";
+      color: var(--gold);
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+    }
+    ul.clean-list li strong { color: var(--white); }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12.5px;
+      color: #e2e8f0;
+      overflow-x: auto;
+      line-height: 1.55;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--bg-code);
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .symbol-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .symbol-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    .symbol-box img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      margin-bottom: 8px;
+    }
+    .slide-footer {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(45, 58, 95, 0.5);
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    @media print {
+      body { background: #0b0f1d !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .toolbar { display: none !important; }
+      .deck { margin: 0; padding: 0; max-width: none; gap: 0; }
+      .slide { border-radius: 0; min-height: 100vh; box-shadow: none; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="toolbar-title">
+      <span>🎰 Classic Slot Machine — Presentation Deck</span>
+      <span style="color: var(--muted); font-weight: 400; font-size: 13px;">(Part I: About The Game • Part II: How We Built It)</span>
+    </div>
+    <div class="toolbar-actions">
+      <a class="btn" href="Slot_Machine_Presentation.pdf" target="_blank">📄 Open Generated PDF</a>
+      <a class="btn" href="Build/WebGL/index.html" target="_blank">🎮 Play WebGL Build</a>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    </div>
+  </div>
+
+  <div class="deck">
+    <!-- SLIDE 1 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge">Game Overview & Engineering Presentation</span>
+            <span class="slide-num">SLIDE 01 / 12</span>
+          </div>
+          <h1>Classic Slot Machine — Unity C# & WebGL Game</h1>
+          <p class="slide-subtitle">A production-grade 3-reel classic slot machine built with Object-Oriented C#, Cryptographic RNG, and 3D Spring-Damped Physics</p>
+        </div>
+
+        <div class="grid-2" style="align-items: center;">
+          <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div class="grid-2" style="gap: 14px;">
+              <div class="card">
+                <div style="font-size: 26px; font-weight: 800; color: var(--gold);">96.5% RTP</div>
+                <div style="font-size: 13px; font-weight: 700;">Cryptographic RNG</div>
+                <div style="font-size: 12px; color: var(--muted);">Unbiased CSPRNG weighted symbol distribution</div>
+              </div>
+              <div class="card">
+                <div style="font-size: 26px; font-weight: 800; color: var(--cyan);">60 FPS</div>
+                <div style="font-size: 13px; font-weight: 700;">Spring-Damped Physics</div>
+                <div style="font-size: 12px; color: var(--muted);">Continuous drum tape &amp; 3D lever ODE</div>
+              </div>
+              <div class="card">
+                <div style="font-size: 26px; font-weight: 800; color: var(--green);">2 Engines</div>
+                <div style="font-size: 13px; font-weight: 700;">Unity C# + WebGL</div>
+                <div style="font-size: 12px; color: var(--muted);">1:1 coordinate, rule &amp; math parity</div>
+              </div>
+              <div class="card">
+                <div style="font-size: 26px; font-weight: 800; color: var(--purple);">Dynamic</div>
+                <div style="font-size: 13px; font-weight: 700;">Live Rule Engine</div>
+                <div style="font-size: 12px; color: var(--muted);">Custom bets, multipliers &amp; rule presets</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Core Arcade Symbols &amp; Default Payouts</h3>
+              <div class="symbol-grid">
+                <div class="symbol-box">
+                  <img src="Assets/Sprites/slot-symbol1.png" alt="Seven" />
+                  <div style="font-weight: 700; font-size: 13px;">7 (SEVEN)</div>
+                  <div style="color: var(--gold); font-size: 12px; font-weight: 700;">100x Bet</div>
+                  <div style="color: var(--cyan); font-size: 11px;">10% Weight</div>
+                </div>
+                <div class="symbol-box">
+                  <img src="Assets/Sprites/slot-symbol4.png" alt="BAR" />
+                  <div style="font-weight: 700; font-size: 13px;">BAR</div>
+                  <div style="color: var(--gold); font-size: 12px; font-weight: 700;">50x Bet</div>
+                  <div style="color: var(--cyan); font-size: 11px;">20% Weight</div>
+                </div>
+                <div class="symbol-box">
+                  <img src="Assets/Sprites/slot-symbol3.png" alt="Bell" />
+                  <div style="font-weight: 700; font-size: 13px;">BELL</div>
+                  <div style="color: var(--gold); font-size: 12px; font-weight: 700;">25x + 5 FS</div>
+                  <div style="color: var(--cyan); font-size: 11px;">30% Weight</div>
+                </div>
+                <div class="symbol-box">
+                  <img src="Assets/Sprites/slot-symbol2.png" alt="Cherry" />
+                  <div style="font-weight: 700; font-size: 13px;">CHERRY</div>
+                  <div style="color: var(--gold); font-size: 12px; font-weight: 700;">10x Bet</div>
+                  <div style="color: var(--cyan); font-size: 11px;">40% Weight</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="text-align: center;">
+            <img src="Assets/Sprites/slot-machine1.png" alt="Slot Machine Cabinet" style="max-height: 410px; object-fit: contain; margin: 0 auto;" />
+            <div style="margin-top: 12px; font-family: monospace; font-size: 13px; color: var(--cyan);">
+              https://github.com/muhtashim132/Slot-Machine-Game
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Classic Slot Machine • Unity &amp; WebGL Game</span>
+        <span>Slide 01 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge">Part I • About The Game</span>
+            <span class="slide-num">SLIDE 02 / 12</span>
+          </div>
+          <h2>Game Overview &amp; First-Time Spotlight Onboarding</h2>
+          <p class="slide-subtitle">Vegas mechanical slot cabinet paired with an interactive 4-step guided tour and full keyboard accessibility</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>1. Core Gameplay Loop &amp; Player Economy</h3>
+            <ul class="clean-list">
+              <li><strong>1,000 Complimentary Coins:</strong> Players begin with 1,000 coins and can reload instantly if bankrupt by pressing <code>R</code> or clicking the Coin Balance box.</li>
+              <li><strong>3-Reel Center Payline:</strong> Horizontal center payline evaluated against pre-calculated cryptographic RNG outcomes.</li>
+              <li><strong>Multiple Spin Triggers:</strong> Click or drag the right-side mechanical lever downward, click the green <strong>SPIN</strong> button, or press <code>Spacebar</code> / <code>Enter</code>.</li>
+              <li><strong>Hands-Free Auto-Spin:</strong> Continuous spinning mode with automatic safety cutoff if coins fall below the current bet amount.</li>
+              <li><strong>Spacious Zero-Overlap Console HUD:</strong> Clean 1280×720 cabinet bar featuring Coin Balance, Last Win, Total Bet steppers, a 235px wide <strong>⚙️ BET SETTINGS</strong> button, and Sound Mute toggle.</li>
+            </ul>
+          </div>
+
+          <div class="card card-cyan">
+            <h3>2. Interactive 4-Step Spotlight Onboarding</h3>
+            <p style="font-size: 13.5px; color: var(--muted); margin-bottom: 14px;">
+              On first launch, an animated <strong>Spotlight Focus Frame</strong> illuminates each component on the arcade cabinet while dimming the background:
+            </p>
+            <ul class="clean-list">
+              <li><strong>Step 01 — The 3-Reel Payline:</strong> Highlights the center payline window and explains the strict 3-of-a-kind default winning criteria.</li>
+              <li><strong>Step 02 — Bet Settings &amp; Rule Configurator:</strong> Focuses on the prominent <code>⚙️ BET SETTINGS</code> button for custom wagers, multipliers, and rule presets.</li>
+              <li><strong>Step 03 — Interactive Mechanical Lever:</strong> Shows how to click or drag the mechanical lever arm downward or trigger spins with Spacebar.</li>
+              <li><strong>Step 04 — Bankroll &amp; Ready to Play:</strong> Highlights the 1,000-coin balance and bankruptcy auto-reload before unlocking the cabinet.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Keyboard Shortcuts: Space/Enter (Spin) • B/P (Bet Settings) • A (Auto-Spin) • M (Mute) • R (Reload Coins) • Esc (Close)</span>
+        <span>Slide 02 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge">Part I • About The Game</span>
+            <span class="slide-num">SLIDE 03 / 12</span>
+          </div>
+          <h2>Dynamic Winning Rule Engine &amp; Payout Matrix</h2>
+          <p class="slide-subtitle">Strict assignment compliance out-of-the-box with live runtime rule customization</p>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Combination</th>
+                <th>Condition Type</th>
+                <th>Multiplier</th>
+                <th>Bonus Reward</th>
+                <th>Default Status (Assignment)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>7 (Seven)</strong></td>
+                <td>3x Seven (7-7-7)</td>
+                <td><code>ALL_MATCH_SPECIFIC (3)</code></td>
+                <td style="color: var(--gold); font-weight: 700;">100x Bet</td>
+                <td>★ Grand Jackpot Celebration ★</td>
+                <td style="color: var(--green); font-weight: 700;">✅ Enabled</td>
+              </tr>
+              <tr>
+                <td><strong>BAR</strong></td>
+                <td>3x Bar (BAR-BAR-BAR)</td>
+                <td><code>ALL_MATCH_SPECIFIC (3)</code></td>
+                <td style="color: var(--gold); font-weight: 700;">50x Bet</td>
+                <td>✦ Mega Win Celebration ✦</td>
+                <td style="color: var(--green); font-weight: 700;">✅ Enabled</td>
+              </tr>
+              <tr>
+                <td><strong>BELL</strong></td>
+                <td>3x Bell (BELL-BELL-BELL)</td>
+                <td><code>ALL_MATCH_SPECIFIC (3)</code></td>
+                <td style="color: var(--gold); font-weight: 700;">25x Bet</td>
+                <td>🔔 +5 Free Spins (2x Multiplier)</td>
+                <td style="color: var(--green); font-weight: 700;">✅ Enabled</td>
+              </tr>
+              <tr>
+                <td><strong>CHERRY</strong></td>
+                <td>3x Cherry</td>
+                <td><code>ALL_MATCH_SPECIFIC (3)</code></td>
+                <td style="color: var(--gold); font-weight: 700;">10x Bet</td>
+                <td>🍒 Sweet Cherry Win 🍒</td>
+                <td style="color: var(--green); font-weight: 700;">✅ Enabled</td>
+              </tr>
+              <tr>
+                <td><strong>CHERRY</strong></td>
+                <td>Any 2 Cherries</td>
+                <td><code>COUNT_SPECIFIC (&gt;=2)</code></td>
+                <td style="color: var(--gold); font-weight: 700;">2x Bet</td>
+                <td>🍒 Minor Win 🍒</td>
+                <td style="color: var(--orange); font-weight: 700;">⏸️ Disabled (Manual Toggle)</td>
+              </tr>
+              <tr>
+                <td><strong>ANY PAIR</strong></td>
+                <td>Any Matching Pair</td>
+                <td><code>ANY_PAIR_RESPIN (2)</code></td>
+                <td style="color: var(--gold); font-weight: 700;">Respin</td>
+                <td>⚡ Lucky Respin (Hold &amp; Spin)</td>
+                <td style="color: var(--orange); font-weight: 700;">⏸️ Disabled (Manual Toggle)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <h3>⭐ Strict Assignment Preset</h3>
+            <p style="font-size: 13px; color: var(--muted);">Default mode conforming strictly to <em>"Player wins when all slots have the same symbol"</em>. Only 3-matching symbols pay out.</p>
+          </div>
+          <div class="card card-cyan">
+            <h3>🎰 Classic Arcade + Bonus</h3>
+            <p style="font-size: 13px; color: var(--muted);">One-click preset that enables Double Cherries (2x) and Lucky Respin (Hold &amp; Spin on matching pairs) for classic arcade action.</p>
+          </div>
+          <div class="card card-purple">
+            <h3>🔥 High Roller &amp; Custom Rules</h3>
+            <p style="font-size: 13px; color: var(--muted);">Edit any multiplier live, type any custom bet amount, or add brand-new rules persisted automatically to <code>localStorage</code>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>All rule modifications apply live and persist across browser sessions</span>
+        <span>Slide 03 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 4 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge">Part I • About The Game</span>
+            <span class="slide-num">SLIDE 04 / 12</span>
+          </div>
+          <h2>Bonus Mechanics: Lucky Respin &amp; Free Spins Frenzy</h2>
+          <p class="slide-subtitle">Two distinct bonus systems engineered to build tension and reward near-miss combinations</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>⚡ Lucky Respin (Near-Miss Hold &amp; Spin)</h3>
+            <ul class="clean-list">
+              <li><strong>Trigger Condition:</strong> When any 2 reels land on matching symbols while the 3rd reel misses (when the Lucky Respin rule is enabled).</li>
+              <li><strong>Golden Reel Lock:</strong> The 2 matching reels lock in place with a 4px golden border highlight (<code>#f59e0b</code>).</li>
+              <li><strong>Isolated 3rd-Reel Respin:</strong> The machine automatically grants a free respin on the remaining non-matching reel for 1.45s.</li>
+              <li><strong>Heartbeat Suspense Audio:</strong> Plays <code>respin_suspense.wav</code> during the single-reel spin before evaluating the final 3-reel combination.</li>
+              <li><strong>Single-Cycle Guard:</strong> Prevents infinite respin loops by disabling re-triggers on the respin evaluation pass.</li>
+            </ul>
+          </div>
+
+          <div class="card card-purple">
+            <h3>🔔 Free Spins Frenzy (3x Bells Bonus)</h3>
+            <ul class="clean-list">
+              <li><strong>Trigger Condition:</strong> Landing <code>BELL-BELL-BELL</code> on the center payline awards <strong>25x Bet</strong> plus <strong>+5 Free Spins</strong>.</li>
+              <li><strong>2X Payout Multiplier:</strong> All winning combinations hit during Free Spins mode receive an automatic <strong>2x multiplier</strong> boost.</li>
+              <li><strong>Zero Bankroll Deduction:</strong> Free spins decrement <code>remainingFreeSpins</code> rather than deducting coins from the player's balance.</li>
+              <li><strong>Triggering Wager Freeze:</strong> Bet modification controls are locked during Free Spins to preserve fairness on the triggering wager.</li>
+              <li><strong>Bonus Banner HUD:</strong> Displays a live status banner showing remaining Free Spins and the active 2X multiplier badge.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Coordinated by BonusManager.cs (Unity) and triggerLuckyRespin / evaluateSpinResult (WebGL)</span>
+        <span>Slide 04 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 5 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge">Part I • About The Game</span>
+            <span class="slide-num">SLIDE 05 / 12</span>
+          </div>
+          <h2>Interactive Mechanical Lever &amp; Sensory Feedback</h2>
+          <p class="slide-subtitle">Tactile click-or-drag lever mechanics, physical cabinet jolt, and particle celebrations</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card card-green">
+            <h3>🕹️ Click &amp; Continuous Drag Mechanical Lever</h3>
+            <div style="display: flex; gap: 16px; justify-content: center; margin: 14px 0;">
+              <div style="background: var(--bg-code); padding: 12px; border-radius: 10px; text-align: center; border: 1px solid var(--border);">
+                <img src="Assets/Sprites/slot-machine2.png" alt="Lever Upright" style="height: 120px; object-fit: contain;" />
+                <div style="font-size: 11px; color: var(--cyan); margin-top: 6px;">Rest Upright (0.0)</div>
+              </div>
+              <div style="background: var(--bg-code); padding: 12px; border-radius: 10px; text-align: center; border: 1px solid var(--gold);">
+                <img src="Assets/Sprites/slot-machine3.png" alt="Lever Pulled" style="height: 120px; object-fit: contain;" />
+                <div style="font-size: 11px; color: var(--gold); margin-top: 6px;">Latched Down (1.0)</div>
+              </div>
+            </div>
+            <ul class="clean-list">
+              <li><strong>Dual Gesture Support:</strong> Click the lever ball handle for an automatic pull, or drag downward across a 125px stroke.</li>
+              <li><strong>Ratchet Gear Clicks:</strong> Every 16% of downward drag fires a procedural sawtooth ratchet click.</li>
+              <li><strong>52% Engagement Latch:</strong> Dragging past 52% latches to the bottom and starts the spin; releasing early springs back without costing coins.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>🎆 Big Win Celebrations &amp; Cabinet Micro-Jolt</h3>
+            <ul class="clean-list">
+              <li><strong>Gravity Particle Fountain:</strong> Spawns 120 golden and cyan rotating confetti particles on Jackpot wins (55 on standard wins) with upward launch velocity and gravity decay.</li>
+              <li><strong>Animated Coin Count-Up Ticker:</strong> Win popup modal counts up winnings smoothly over 1.7s using a quadratic ease-out curve.</li>
+              <li><strong>Payline Golden Backlight &amp; Symbol Pulse:</strong> Winning symbols scale sinusoidally (±13% at 5.5 rad/s) over a radial golden glow.</li>
+              <li><strong>Physical Cabinet Micro-Jolt:</strong> Every reel latch and lever impact imparts a vertical damped harmonic jolt to the entire slot cabinet frame.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Every player input produces synchronized visual, physical, and acoustic feedback</span>
+        <span>Slide 05 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 6 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge badge-cyan">Part II • How We Built It</span>
+            <span class="slide-num">SLIDE 06 / 12</span>
+          </div>
+          <h2>Clean OOP Architecture &amp; Dual-Engine Parity</h2>
+          <p class="slide-subtitle">Decoupled C# subsystems in Unity mirrored 1:1 with the standalone HTML5 WebGL Engine</p>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 20px;">
+          <div class="card">
+            <h3>SlotMachine.Core</h3>
+            <ul class="clean-list">
+              <li><code>GameManager.cs</code> — Central FSM &amp; bankroll</li>
+              <li><code>PayoutTable.cs</code> — Dynamic <code>WinRule</code> evaluator</li>
+              <li><code>RNGService.cs</code> — Cryptographic RNG</li>
+              <li><code>SoundManager.cs</code> — Audio clip controller</li>
+            </ul>
+          </div>
+          <div class="card card-cyan">
+            <h3>SlotMachine.Reels</h3>
+            <ul class="clean-list">
+              <li><code>SlotReelManager.cs</code> — 3-reel coordinator &amp; stagger</li>
+              <li><code>ReelStrip.cs</code> — Symbol pooling &amp; spring physics</li>
+              <li><code>ReelSymbol.cs</code> — Sprite &amp; win pulse</li>
+            </ul>
+          </div>
+          <div class="card card-purple">
+            <h3>SlotMachine.Bonus</h3>
+            <ul class="clean-list">
+              <li><code>BonusManager.cs</code> — Free Spins state machine</li>
+              <li>2x multiplier flag &amp; free spin consumption</li>
+              <li>Lucky Respin single-reel isolation</li>
+            </ul>
+          </div>
+          <div class="card card-green">
+            <h3>SlotMachine.UI</h3>
+            <ul class="clean-list">
+              <li><code>UIManager.cs</code> — HUD counters &amp; modals</li>
+              <li><code>LeverController.cs</code> — Pointer &amp; drag handlers</li>
+              <li><code>WinCelebrationUI.cs</code> — Fanfare &amp; ticker</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card card-cyan">
+          <h3>Event-Driven Finite State Machine Flow</h3>
+          <pre>IDLE  ──(OnLeverPulled / OnSpinButtonPressed)──►  SPINNING  ──(CSPRNG Outcome Pre-Calculated: [R1, R2, R3])
+  ▲                                                   │
+  │                                                   ▼ (OnAllReelsStopped)
+  └───────  CELEBRATING / IDLE  ◄──(Win / Loss)──  EVALUATING  ──(2 Match + Respin Rule)──►  RESPINNING (1 Reel)</pre>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Separation of concerns ensures math, physics, and UI can be tuned independently</span>
+        <span>Slide 06 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 7 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge badge-cyan">Part II • How We Built It</span>
+            <span class="slide-num">SLIDE 07 / 12</span>
+          </div>
+          <h2>Cryptographic RNG &amp; 96.5% RTP Probability Model</h2>
+          <p class="slide-subtitle">Unbiased CSPRNG rejection sampling and pre-spin outcome determination</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Weighted Probability &amp; RTP Derivation</h3>
+            <ul class="clean-list">
+              <li><strong>7 (SEVEN) — 10% Weight:</strong> $P(7,7,7) = 0.10^3 = 0.10\%$ (1 in 1,000 spins, 100x payout)</li>
+              <li><strong>BAR — 20% Weight:</strong> $P(\text{BAR}^3) = 0.20^3 = 0.80\%$ (1 in 125 spins, 50x payout)</li>
+              <li><strong>BELL — 30% Weight:</strong> $P(\text{BELL}^3) = 0.30^3 = 2.70\%$ (25x payout + 5 Free Spins @ 2x)</li>
+              <li><strong>CHERRY — 40% Weight:</strong> $P(\text{CHERRY}^3) = 0.40^3 = 6.40\%$ (10x payout)</li>
+              <li><strong>Pre-Spin Lock:</strong> Following regulated gaming standards, <code>outcomes[0..2]</code> are drawn <em>before</em> the reels start moving, making client-side stopper timing manipulation impossible.</li>
+            </ul>
+          </div>
+
+          <div class="card card-cyan">
+            <h3>Eliminating 32-Bit Modulo Bias (RNGService.cs)</h3>
+            <pre>public static int GetSecureInt(int minValue, int maxValue)
+{
+    long diff = (long)maxValue - minValue;
+    byte[] uint32Buffer = new byte[4];
+
+    while (true)
+    {
+        CryptoProvider.GetBytes(uint32Buffer);
+        uint rand = BitConverter.ToUInt32(uint32Buffer, 0);
+
+        // Reject values in the incomplete upper bucket
+        long maxValid = (1L &lt;&lt; 32) - ((1L &lt;&lt; 32) % diff);
+        if (rand &lt; maxValid)
+        {
+            return (int)(minValue + (rand % diff));
+        }
+    }
+}</pre>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>C# uses System.Security.Cryptography.RNGCryptoServiceProvider • WebGL uses window.crypto.getRandomValues</span>
+        <span>Slide 07 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 8 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge badge-cyan">Part II • How We Built It</span>
+            <span class="slide-num">SLIDE 08 / 12</span>
+          </div>
+          <h2>6-Phase Continuous Drum Tape &amp; Spring-Damped Physics</h2>
+          <p class="slide-subtitle">Infinite virtual strip map, 3D cylindrical foreshortening, and damped cosine overshoot</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>6-Phase Reel Kinematics</h3>
+            <ul class="clean-list">
+              <li><strong>Phase 1 — Upward Stepper Kickback (75ms):</strong> Reels pull slightly upward (<code>-0.13 * sin(π * t / 0.075)</code>) before launching downward.</li>
+              <li><strong>Phase 2 — Rapid Acceleration:</strong> Accelerates at <code>68 symbols/sec²</code> up to <code>24.5 + index * 1.1 symbols/sec</code>.</li>
+              <li><strong>Phase 3 — High-Speed Blur:</strong> Multi-pass vertical motion blur stretches symbol height proportionally to drum velocity.</li>
+              <li><strong>Phase 4 — 6-Symbol Deceleration Runway:</strong> Stamps target symbol at <code>ceil(pos) + 6</code> and decelerates via cubic ease-out <code>1 - (1 - u)^2.5</code>.</li>
+              <li><strong>Phase 5 — Physical Overshoot (+20.5px):</strong> Drops past the payline, firing <code>reel_stop.wav</code> and a cabinet jolt impulse.</li>
+              <li><strong>Phase 6 — Damped Cosine Spring Rebound:</strong> Springs back to exact center payline alignment.</li>
+            </ul>
+          </div>
+
+          <div class="card card-cyan">
+            <h3>Spring Rebound &amp; 3D Drum Foreshortening Code</h3>
+            <pre>// Damped harmonic spring-back from +overshoot (0.21 steps)
+const v = (this.stopProgress - splitT) / (1.0 - splitT);
+const rebound = overshoot * Math.cos(v * Math.PI * 0.5) * (1 - 0.25 * v);
+this.position = this.targetStep + rebound;
+
+// 3D Cylindrical Foreshortening near top/bottom drum curve
+const distFromCenter = Math.abs(symY - centerY) / (this.h * 0.55);
+const cylSquashY = Math.max(
+  0.82,
+  1.0 - 0.12 * distFromCenter * distFromCenter
+);</pre>
+            <p style="font-size: 13px; color: var(--muted); margin-top: 12px;">
+              <strong>Suspense Timing:</strong> Reel 1 stops at <code>1.25s</code>, Reel 2 at <code>1.70s</code>, and Reel 3 extends to <code>2.45s</code> with heartbeat audio whenever Reel 1 and Reel 2 match!
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Implemented in Assets/Scripts/Reels/ReelStrip.cs and Build/WebGL/game.js (class Reel)</span>
+        <span>Slide 08 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 9 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge badge-cyan">Part II • How We Built It</span>
+            <span class="slide-num">SLIDE 09 / 12</span>
+          </div>
+          <h2>Continuous 3D Lever Spring-Damper &amp; Cabinet Jolt</h2>
+          <p class="slide-subtitle">Second-order differential equations (a = -k·x - c·v) driving physical rebound and 3D perspective rendering</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card card-green">
+            <h3>Second-Order Spring-Damper ODE</h3>
+            <pre>// 1. Lever Spring-Return (stiffness k = 220, damping c = 16.5)
+const stiffness = 220;
+const damping = 16.5;
+const accel = -stiffness * state.leverPos - damping * state.leverVel;
+state.leverVel += accel * dt;
+state.leverPos += state.leverVel * dt;
+state.leverPos = Math.max(-0.08, Math.min(1.0, state.leverPos));
+
+// 2. Coupled Physical Cabinet Micro-Jolt (k = 340, c = 24)
+const jAccel = -340 * state.cabinetJoltY - 24 * state.cabinetJoltVel;
+state.cabinetJoltVel += jAccel * dt;
+state.cabinetJoltY += state.cabinetJoltVel * dt;</pre>
+          </div>
+
+          <div class="card">
+            <h3>Real-Time 3D Perspective Shaft &amp; Knob</h3>
+            <ul class="clean-list">
+              <li><strong>5-Phase State Machine:</strong> <code>idle</code> → <code>dragging</code> / <code>auto_pull</code> → <code>bottom_hold</code> (90ms mechanical dwell) → <code>spring_return</code>.</li>
+              <li><strong>3D Angular Foreshortening:</strong> Sweeps angle $\theta$ from $-72^\circ$ (upright) to $+58^\circ$ (pulled), foreshortening the chrome shaft length at horizontal midpoint to simulate 3D tilt toward the player.</li>
+              <li><strong>Perspective Ball Knob Scaling:</strong> Enlarges the ball handle by $+14\%$ at $\theta = 0^\circ$ (closest to camera) with a 3-stop radial specular highlight.</li>
+              <li><strong>Top Rebound Overshoot:</strong> Allowing <code>leverPos</code> to reach <code>-0.08</code> produces an authentic mechanical bounce past the upper stop.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Coupled impulses transfer energy between the lever latch, reel stops, and cabinet frame</span>
+        <span>Slide 09 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 10 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge badge-cyan">Part II • How We Built It</span>
+            <span class="slide-num">SLIDE 10 / 12</span>
+          </div>
+          <h2>Audio Synthesis &amp; Zero-Server WebGL Asset Pipeline</h2>
+          <p class="slide-subtitle">Bypassing local file:// CORS restrictions with in-memory Base64 AudioBuffers and WebAudio oscillators</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card card-purple">
+            <h3>1. Hybrid Base64 In-Memory Audio Decoder</h3>
+            <ul class="clean-list">
+              <li><strong>The file:// CORS Problem:</strong> Browsers block <code>fetch()</code> and <code>XMLHttpRequest</code> for local audio files when opening <code>index.html</code> directly from disk.</li>
+              <li><strong>In-Memory Base64 Solution:</strong> All 8 synthesized WAV files are embedded as Base64 strings in <code>AUDIO_BASE64</code> and decoded directly in RAM into native WebAudio <code>AudioBuffer</code> instances via <code>ctx.decodeAudioData()</code>.</li>
+              <li><strong>Zero-Latency Procedural Oscillators:</strong> High-frequency tactile ticks (<code>leverRatchet</code>, <code>leverLatch</code>, <code>leverSpring</code>, <code>reelTick</code>) are synthesized in real time using WebAudio <code>OscillatorNode</code> waveforms.</li>
+              <li><strong>Safe Autoplay Unlock:</strong> Automatically resumes suspended audio contexts on the first user click, touch, or keypress.</li>
+            </ul>
+          </div>
+
+          <div class="card card-cyan">
+            <h3>2. Sound Effect &amp; Synthesizer Profile</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Audio Event</th>
+                  <th>Waveform / Source</th>
+                  <th>Envelope / Profile</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>lever_pull.wav</code></td><td>Base64 WAV Buffer</td><td>Mechanical Spring Ratchet</td></tr>
+                <tr><td><code>leverRatchet</code></td><td>Sawtooth Oscillator</td><td>240Hz → 110Hz (25ms)</td></tr>
+                <tr><td><code>leverLatch</code></td><td>Triangle Oscillator</td><td>130Hz → 42Hz (80ms Thud)</td></tr>
+                <tr><td><code>reel_spin.wav</code></td><td>Looped WAV Buffer</td><td>Continuous Motor Hum</td></tr>
+                <tr><td><code>reelTick</code></td><td>Triangle Oscillator</td><td>380Hz → 160Hz (16ms Click)</td></tr>
+                <tr><td><code>reel_stop.wav</code></td><td>Base64 WAV Buffer</td><td>145Hz → 48Hz Drum Latch</td></tr>
+                <tr><td><code>respin_suspense</code></td><td>Base64 WAV Buffer</td><td>Rising Heartbeat Pulse</td></tr>
+                <tr><td><code>win_jackpot.wav</code></td><td>Base64 WAV Buffer</td><td>Full Arcade Jackpot Fanfare</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Works both via HTTP server and direct double-click on Build/WebGL/index.html</span>
+        <span>Slide 10 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 11 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge badge-cyan">Part II • How We Built It</span>
+            <span class="slide-num">SLIDE 11 / 12</span>
+          </div>
+          <h2>UI Engineering, Safari Compatibility &amp; Edge-Case Guards</h2>
+          <p class="slide-subtitle">Defensive programming against race conditions, text clipping, and cross-browser rendering quirks</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>1. Spacious Console Bar &amp; Safari Fixes</h3>
+            <ul class="clean-list">
+              <li><strong>235px Zero-Overlap Bet Settings Button:</strong> Removed cluttered PAYTABLE and TOUR buttons from the bottom bar and expanded <code>⚙️ BET SETTINGS</code> to 235px width.</li>
+              <li><strong>Auto-Scaling Typography:</strong> Dynamically scales canvas font sizes when coin balances or custom high-roller wagers grow large, preventing text overflow.</li>
+              <li><strong>Safari-Proof Centering:</strong> Explicit geometric bounding-box coordinates ensure crisp centering of buttons and spotlight frames across Safari, Chrome, and Firefox.</li>
+            </ul>
+          </div>
+
+          <div class="card card-green">
+            <h3>2. Gameplay State &amp; Async Timer Guards</h3>
+            <ul class="clean-list">
+              <li><strong>Mid-Spin Wager Lock:</strong> Prevents modifying bet amounts, toggling rules, or switching presets while <code>state.isSpinning</code> is active.</li>
+              <li><strong>Free Spins Wager Freeze:</strong> Locks bet inputs while <code>state.freeSpins &gt; 0</code> so bonus spins cannot be exploited.</li>
+              <li><strong>Respin Stop-Count Fix:</strong> Dynamically switches <code>requiredStops</code> between <code>3</code> (normal spin) and <code>1</code> (Lucky Respin) so single-reel respins never hang.</li>
+              <li><strong>Managed Timeout &amp; RAF Registry:</strong> Tracks all spin timeouts in <code>state.spinTimeouts[]</code> and cleanly cancels celebration <code>requestAnimationFrame</code> tickers on early dismiss.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>All custom rules and wagers are validated and persisted to localStorage with safe fallback</span>
+        <span>Slide 11 / 12</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 12 -->
+    <section class="slide">
+      <div>
+        <div class="slide-header">
+          <div class="slide-meta">
+            <span class="badge badge-cyan">Part II • How We Built It</span>
+            <span class="slide-num">SLIDE 12 / 12</span>
+          </div>
+          <h2>Engineering Commit Timeline &amp; How to Run</h2>
+          <p class="slide-subtitle">From initial Unity asset setup to 3D spring-damped lever &amp; drum physics pushed to GitHub</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Git Engineering Milestone Timeline</h3>
+            <ul class="clean-list">
+              <li><code>d8eabae</code> — Initialize Unity project structure, ProjectSettings &amp; visual assets</li>
+              <li><code>1fc6ac9</code> — Add 8 synthesized arcade WAV sound effects for lever, reels &amp; wins</li>
+              <li><code>81d6426</code> — Implement cryptographic <code>RNGService</code>, <code>PayoutTable</code> &amp; <code>SoundManager</code></li>
+              <li><code>2f96af7</code> — Implement spring-damped <code>ReelStrip</code> spinning, pooling &amp; staggered stops</li>
+              <li><code>f1f30cf</code> — Implement <code>LeverController</code>, HUD controls, Lucky Respin &amp; Free Spins</li>
+              <li><code>f6086da</code> / <code>8b37b46</code> — Standalone WebGL engine + in-memory Base64 audio decoding</li>
+              <li><code>be736dc</code> / <code>ee5b220</code> — Dynamic Winning Rule Engine, custom multipliers &amp; manual bet input</li>
+              <li><code>ba2b796</code> / <code>aac6f5f</code> / <code>c24c9e7</code> — 4-Step Spotlight Onboarding &amp; 235px zero-overlap console</li>
+              <li><code>b6cb09a</code> — Continuous 3D spring-damped lever drag/pull, true drum tape scrolling &amp; Safari guards</li>
+            </ul>
+          </div>
+
+          <div class="card card-green">
+            <h3>How to Run &amp; Play Instantly</h3>
+            <pre># Option 1: Python Local Server (Recommended)
+python3 -m http.server 8080 --directory Build/WebGL
+# Open http://localhost:8080
+
+# Option 2: Zero-Server Direct Double-Click
+open "Build/WebGL/index.html"
+
+# Option 3: Open PDF Presentation Deck
+open "Slot_Machine_Presentation.pdf"</pre>
+            <div style="margin-top: 16px; padding: 14px; border-radius: 10px; background: rgba(34, 197, 94, 0.12); border: 1px solid var(--green); font-size: 13.5px; color: var(--green); font-weight: 600;">
+              ✓ Pushed to GitHub: https://github.com/muhtashim132/Slot-Machine-Game
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Classic Slot Machine • Complete Unity C# &amp; WebGL Engineering Deck</span>
+        <span>Slide 12 / 12</span>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
